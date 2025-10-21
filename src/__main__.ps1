@@ -1,15 +1,417 @@
-# ===============================
-# Import all .ps1 files in src and subfolders except this file and Prefrence.ps1
-# ===============================
-$importMe = $MyInvocation.MyCommand.Path
-$srcRoot = Split-Path $importMe
-$ps1Files = Get-ChildItem -Path $srcRoot -Recurse -Filter *.ps1 | Where-Object {
-    $_.FullName -ne $importMe -and $_.Name -ne '__main__.ps1' -and $_.Name -ne 'Prefrence.ps1'
+# ===============================================================================================================================
+#                                                           INSTALL APPS
+# ===============================================================================================================================
+function Install-App {
+    param (
+        [string]$AppId,
+        [string]$AppName
+    )
+
+    Write-Host "Installing $AppName..."
+    $command = "winget install --id $AppId -e --silent"
+
+    try {
+        Invoke-Expression $command 2>&1 | Out-String
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[SUCCESS] $AppName installed"
+        }
+        else {
+            Write-Host "[ERROR] $AppName failed with exit code $LASTEXITCODE"
+        }
+    }
+    catch {
+        Write-Host "[EXCEPTION] $AppName -> $($_.Exception.Message)"
+    }
 }
-foreach ($file in $ps1Files) {
-    Write-Host "Importing $($file.FullName)"
-    . $file.FullName
+
+# =========================
+# Individual Install
+# =========================
+
+# Browsers
+function Install-Chrome { Install-App -AppId "Google.Chrome" -AppName "Google Chrome" }
+function Install-Firefox { Install-App -AppId "Mozilla.Firefox" -AppName "Mozilla Firefox" }
+function Install-Brave { Install-App -AppId "Brave.Brave" -AppName "Brave Browser" }
+
+# Game Launchers
+function Install-Steam { Install-App -AppId "Valve.Steam" -AppName "Steam" }
+function Install-Epic { Install-App -AppId "EpicGames.EpicGamesLauncher" -AppName "Epic Games Launcher" }
+function Install-EA { Install-App -AppId "ElectronicArts.EADesktop" -AppName "EA App" }
+function Install-Ubisoft { Install-App -AppId "Ubisoft.Connect" -AppName "Ubisoft Connect" }
+
+# Security / Privacy Apps
+function Install-ProtonAuthenticator { Install-App -AppId "Proton.ProtonAuthenticator" -AppName "Proton Authenticator" }
+function Install-Portmaster { Install-App -AppId "Safing.Portmaster" -AppName "Portmaster" }
+function Install-ProtonDrive { Install-App -AppId "Proton.ProtonDrive" -AppName "Proton Drive" }
+function Install-ProtonMail { Install-App -AppId "Proton.ProtonMail" -AppName "Proton Mail" }
+function Install-ProtonMailBridge { Install-App -AppId "Proton.ProtonMailBridge" -AppName "Proton Mail Bridge" }
+function Install-ProtonPass { Install-App -AppId "Proton.ProtonPass" -AppName "Proton Pass" }
+function Install-ProtonVPN { Install-App -AppId "Proton.ProtonVPN" -AppName "Proton VPN" }
+
+function Install-Bitdefender { Install-App -AppId "Bitdefender.Bitdefender" -AppName "Bitdefender" }
+function Install-BitdefenderVPN { Install-App -AppId "Bitdefender.BitdefenderVPN" -AppName "Bitdefender VPN" }
+function Install-Mysterium { Install-App -AppId "Mysterium.Network" -AppName "Mysterium VPN" }
+
+
+
+# ===============================================================================================================================
+#                                                           LAUNCH PROGRAMS
+# ===============================================================================================================================
+# Function to launch Revo Uninstaller
+# =====================================
+function Launch_RevoSilent {
+    # Use PSScriptRoot to get the script's folder reliably
+    $scriptDir = $PSScriptRoot
+
+    # Build the path to the exe (two folders up, then Tools\RevoUninstaller\RevoUPort.exe)
+    $exePath = Join-Path $scriptDir "..\..\Tools\RevoUninstaller\RevoUPort.exe"
+    $exeFullPath = Resolve-Path $exePath -ErrorAction SilentlyContinue
+
+    if (-not $exeFullPath) {
+        Write-Host "Error: Revo Uninstaller not found at $exePath"
+        return
+    }
+
+    try {
+        # Launch the executable silently
+        Start-Process -FilePath $exeFullPath -ArgumentList "/S" -WindowStyle Hidden -Wait
+        Write-Host "Launched Revo Uninstaller silently!"
+    } catch {
+        Write-Host "Failed to launch Revo Uninstaller: $_"
+    }
 }
+
+# ==============================================
+# Function to launch Revo Reg Cleaner portable
+# ==============================================
+function Launch_RevoRegPortable {
+    # Use PSScriptRoot to get the script's folder reliably
+    $scriptDir = $PSScriptRoot
+
+    # Build the path to the exe (two folders up, then Tools\RevoRegCleaner.exe)
+    $exePath = Join-Path $scriptDir "..\..\Tools\Revo Registry Cleaner\Revo Registry Cleaner.exe"
+    $exeFullPath = Resolve-Path $exePath -ErrorAction SilentlyContinue
+
+    if (-not $exeFullPath) {
+        Write-Host "Error: Portable Revo Reg Cleaner not found at $exePath"
+        return
+    }
+
+    try {
+        # Launch the portable executable
+        Start-Process -FilePath $exeFullPath -WindowStyle Hidden -Wait
+        Write-Host "Launched Revo Reg Cleaner Portable successfully!"
+    } catch {
+        Write-Host "Failed to launch Revo Reg Cleaner: $_"
+    }
+}
+
+
+
+# ===============================================================================================================================
+#                                                           ADVANCED TWEAKS
+# ===============================================================================================================================
+function Invoke-Command {
+    param (
+        [string]$Command
+    )
+    try {
+        Invoke-Expression $Command
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[SUCCESS] $Command" -ForegroundColor Green
+        } else {
+            Write-Host "[ERROR] $Command" -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "[EXCEPTION] $Command -> $_" -ForegroundColor Yellow
+    }
+}
+
+# Wrapper to match provided Disable-IPv6 usage
+function Run-Command {
+    param([Parameter(Mandatory)][string]$Command)
+    try {
+        Invoke-Expression $Command
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[SUCCESS] $Command" -ForegroundColor Green
+        } else {
+            Write-Host "[ERROR] $Command" -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "[EXCEPTION] $Command -> $_" -ForegroundColor Yellow
+    }
+}
+
+# Disable IPv6
+function Disable-IPv6 {
+    Write-Host "Disabling IPv6..." -ForegroundColor Cyan
+    Run-Command "netsh interface ipv6 set disabledcomponents 0xFF"
+}
+
+
+
+# ===============================================================================================================================
+#                                                           REGISTRY TWEAKS
+# ===============================================================================================================================
+function Set-RegistryValue {
+    param (
+        [string]$Root,
+        [string]$Path,
+        [string]$Name,
+        [Object]$Value,
+        [Microsoft.Win32.RegistryValueKind]$ValueType = [Microsoft.Win32.RegistryValueKind]::DWord
+    )
+    try {
+        $key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($Path, $true)
+        if (-not $key) {
+            $key = [Microsoft.Win32.Registry]::LocalMachine.CreateSubKey($Path)
+        }
+        $key.SetValue($Name, $Value, $ValueType)
+        $key.Close()
+        Write-Host "[SUCCESS] Set '$Root\$Path\$Name' = $Value" -ForegroundColor Green
+        Write-Log "[SUCCESS] Set '$Root\$Path\$Name' = $Value"
+        return $true
+    }
+    catch {
+        Write-Host "[ERROR] Failed to set '$Root\$Path\$Name': $_" -ForegroundColor Red
+        Write-Log "[ERROR] Failed to set '$Root\$Path\$Name': $_"
+        return $false
+    }
+}
+
+# =========================================
+#            Individual Tweaks
+# =========================================
+function Win32_Priority {
+    return Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" `
+                             -Path "SYSTEM\CurrentControlSet\Control\PriorityControl" `
+                             -Name "Win32PrioritySeparation" `
+                             -Value 38
+}
+
+function Network_Throttling {
+    return Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" `
+                             -Path "SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" `
+                             -Name "NetworkThrottlingIndex" `
+                             -Value 0xFFFFFFFF
+}
+
+function Enable_GameMode {
+    return Set-RegistryValue -Root "HKEY_CURRENT_USER" `
+                             -Path "Software\Microsoft\GameBar" `
+                             -Name "AllowAutoGameMode" `
+                             -Value 1
+}
+
+function Enable_GPUHardwareScheduling {
+    return Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" `
+                             -Path "SYSTEM\CurrentControlSet\Control\GraphicsDrivers" `
+                             -Name "HwSchMode" `
+                             -Value 2
+}
+
+function Games_Tweaks {
+    $basePath = "SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
+    $results = @()
+    $results += Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" -Path $basePath -Name "GPU Priority" -Value 8
+    $results += Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" -Path $basePath -Name "Priority" -Value 6
+    $results += Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" -Path $basePath -Name "Scheduling Category" -Value "High" -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
+    $results += Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" -Path $basePath -Name "SFIO Priority" -Value "High" -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
+    return ($results -notcontains $false)
+}
+
+function GameBar_Tweaks {
+    $basePath = "Software\Microsoft\GameBar"
+    $results = @()
+    $results += Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path $basePath -Name "ShowStartupPanel" -Value 0
+    $results += Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path $basePath -Name "AllowGameDVR" -Value 0
+    $results += Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path $basePath -Name "AllowAutoGameMode" -Value 0
+    $results += Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path $basePath -Name "BroadcastingEnabled" -Value 0
+    $results += Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path $basePath -Name "ShowGameBarWhenGaming" -Value 0
+    return ($results -notcontains $false)
+}
+
+function Set_TcpAckFrequency {
+    param (
+        [int]$Value = 1
+    )
+
+    $tcpipPath = "SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
+    try {
+        $interfaces = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($tcpipPath).GetSubKeyNames()
+        $success = $true
+
+        foreach ($iface in $interfaces) {
+            try {
+                $subKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey("$tcpipPath\$iface", $true)
+                $subKey.SetValue("TcpAckFrequency", $Value, [Microsoft.Win32.RegistryValueKind]::DWord)
+                $subKey.Close()
+                Write-Host "[SUCCESS] TcpAckFrequency set to $Value for adapter $iface" -ForegroundColor Green
+                Write-Log "[SUCCESS] TcpAckFrequency set to $Value for adapter $iface"
+            }
+            catch {
+                Write-Host "[ERROR] Failed to set TcpAckFrequency for adapter $iface" -ForegroundColor Red
+                Write-Log "[ERROR] Failed to set TcpAckFrequency for adapter $iface"
+                $success = $false
+            }
+        }
+        return $success
+    }
+    catch {
+        Write-Host "[ERROR] Failed to enumerate network adapters: $_" -ForegroundColor Red
+        Write-Log "[ERROR] Failed to enumerate network adapters: $_"
+        return $false
+    }
+}
+
+# Main function to apply all registry tweaks
+function Invoke-AllTweaks {
+    Write-Host "=== APPLYING REGISTRY TWEAKS ===" -ForegroundColor Yellow
+    Write-Log "=== APPLYING REGISTRY TWEAKS ==="
+    
+    Win32_Priority
+    Network_Throttling
+    Enable_GameMode
+    Enable_GPUHardwareScheduling
+    Games_Tweaks
+    GameBar_Tweaks
+    Set_TcpAckFrequency -Value 1
+    
+    Write-Host "=== REGISTRY TWEAKS COMPLETE ===" -ForegroundColor Green
+    Write-Log "=== REGISTRY TWEAKS COMPLETE ==="
+}
+
+# ===============================================================================================================================
+#                                                           SERVICE TWEAKS
+# ===============================================================================================================================
+function Set-ServiceTweak {
+    param (
+        [string]$ServiceName,
+        [string]$StartupType
+    )
+
+    Write-Host "Tweaking: ${ServiceName} -> ${StartupType}" -ForegroundColor Cyan
+
+    try {
+        $null = sc.exe config $ServiceName "start=$StartupType" 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[OK] ${ServiceName}: set startup to '${StartupType}'" -ForegroundColor Green
+        } else {
+            Write-Host "[ERROR] ${ServiceName}: failed (exit code: $LASTEXITCODE)" -ForegroundColor Red
+        }
+    }
+    catch {
+        Write-Host "[EXCEPTION] ${ServiceName} -> $($_.Exception.Message)" -ForegroundColor DarkRed
+    }
+}
+
+function Invoke-ServiceTweak {
+    param (
+        [string]$ServiceName,
+        [string]$StartupType
+    )
+
+    Write-Host "Tweaking: ${ServiceName} -> ${StartupType}" -ForegroundColor Cyan
+    Write-Log "Tweaking: ${ServiceName} -> ${StartupType}"
+
+    try {
+        $null = sc.exe config $ServiceName "start=$StartupType" 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[OK] ${ServiceName}: set startup to '${StartupType}'" -ForegroundColor Green
+            Write-Log "[OK] ${ServiceName}: set startup to '${StartupType}'"
+        } else {
+            Write-Host "[ERROR] ${ServiceName}: failed (exit code: $LASTEXITCODE)" -ForegroundColor Red
+            Write-Log "[ERROR] ${ServiceName}: failed (exit code: $LASTEXITCODE)"
+        }
+    }
+    catch {
+        Write-Host "[EXCEPTION] ${ServiceName} -> $($_.Exception.Message)" -ForegroundColor DarkRed
+        Write-Log "[EXCEPTION] ${ServiceName} -> $($_.Exception.Message)"
+    }
+}
+
+# =========================================
+#            Individual Tweaks
+# =========================================
+$ServiceTweaks = @(
+    @{ Name = "AJRouter"; Startup = "disabled" }
+    @{ Name = "AppVClient"; Startup = "disabled" }
+    @{ Name = "DiagTrack"; Startup = "disabled" }
+    @{ Name = "DialogBlockingService"; Startup = "disabled" }
+    @{ Name = "dmwappushservice"; Startup = "disabled" }
+    @{ Name = "RemoteAccess"; Startup = "disabled" }
+    @{ Name = "RemoteRegistry"; Startup = "disabled" }
+    @{ Name = "shpamsvc"; Startup = "disabled" }
+    @{ Name = "ssh-agent"; Startup = "disabled" }
+    @{ Name = "tzautoupdate"; Startup = "disabled" }
+    @{ Name = "uhssvc"; Startup = "disabled" }
+    @{ Name = "UevAgentService"; Startup = "disabled" }
+    @{ Name = "SysMain"; Startup = "disabled" }
+    @{ Name = "RetailDemo"; Startup = "disabled" }
+    @{ Name = "WMPNetworkSvc"; Startup = "disabled" }
+    @{ Name = "WalletService"; Startup = "disabled" }
+    @{ Name = "PhoneSvc"; Startup = "disabled" }
+    @{ Name = "MapsBroker"; Startup = "disabled" }
+    @{ Name = "lfsvc"; Startup = "disabled" }
+    @{ Name = "CDPSvc"; Startup = "disabled" }
+    @{ Name = "CDPUserSvc"; Startup = "disabled" }
+    @{ Name = "MessagingService"; Startup = "disabled" }
+    @{ Name = "PimIndexMaintenanceSvc"; Startup = "disabled" }
+    @{ Name = "UnistoreSvc"; Startup = "disabled" }
+    @{ Name = "OneSyncSvc"; Startup = "disabled" }
+
+    # ⚡ Auto
+    @{ Name = "AudioEndpointBuilder"; Startup = "auto" }
+    @{ Name = "AudioSrv"; Startup = "auto" }
+    @{ Name = "BFE"; Startup = "auto" }
+    @{ Name = "BthAvctpSvc"; Startup = "auto" }
+    @{ Name = "BthHFSrv"; Startup = "auto" }
+    @{ Name = "CoreMessagingRegistrar"; Startup = "auto" }
+    @{ Name = "CryptSvc"; Startup = "auto" }
+    @{ Name = "Dhcp"; Startup = "auto" }
+    @{ Name = "Dnscache"; Startup = "auto" }
+    @{ Name = "EventLog"; Startup = "auto" }
+    @{ Name = "Spooler"; Startup = "auto" }
+    @{ Name = "MpsSvc"; Startup = "auto" }
+    @{ Name = "RpcEptMapper"; Startup = "auto" }
+    @{ Name = "SamSs"; Startup = "auto" }
+    @{ Name = "SENS"; Startup = "auto" }
+    @{ Name = "WinDefend"; Startup = "auto" }
+
+    # 📦 Manual (demand) examples
+    @{ Name = "AppIDSvc"; Startup = "demand" }
+    @{ Name = "AppMgmt"; Startup = "demand" }
+    @{ Name = "BcastDVRUserService"; Startup = "demand" }
+    @{ Name = "BluetoothUserService"; Startup = "demand" }
+    @{ Name = "Fax"; Startup = "demand" }
+)
+
+$XboxServices = @(
+    @{ Name = "XblAuthManager"; Startup = "disabled" }
+    @{ Name = "XblGameSave"; Startup = "disabled" }
+    @{ Name = "XboxNetApiSvc"; Startup = "disabled" }
+)
+
+# Main function to apply all service tweaks
+function Invoke-ServiceTweaks {
+    Write-Host "=== APPLYING SERVICE TWEAKS ===" -ForegroundColor Yellow
+    
+    foreach ($tweak in $ServiceTweaks) {
+        Invoke-ServiceTweak -ServiceName $tweak.Name -StartupType $tweak.Startup
+    }
+    
+    foreach ($xbox in $XboxServices) {
+        Invoke-ServiceTweak -ServiceName $xbox.Name -StartupType $xbox.Startup
+    }
+    
+    Write-Host "=== SERVICE TWEAKS COMPLETE ===" -ForegroundColor Green
+}
+
+# ===============================
+# Define Paths
+# ===============================
+$noisePath = Join-Path $PSScriptRoot "noise.png"
+
 # ===============================
 # XAML UI
 # ===============================
@@ -17,34 +419,104 @@ $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PCTool"
+        WindowStyle="None"
+        AllowsTransparency="True"
         ResizeMode="CanResize"
         MinHeight="600" MinWidth="1000"
+        Height="700" Width="1200"
         WindowStartupLocation="CenterScreen"
         Foreground="{DynamicResource ForegroundBrush}"
-        Background="{DynamicResource WindowBackgroundBrush}">
+        Background="Transparent">
     <Window.Resources>
         <!-- Dark theme -->
-        <Color x:Key="DarkBackgroundColor">#0A0F1C</Color>
-        <Color x:Key="DarkForegroundColor">White</Color>
-        <Color x:Key="DarkCardColor">#801F2937</Color> <!-- 50% transparent dark card -->
-        <Color x:Key="DarkBorderColor">#374151</Color>
-        <Color x:Key="DarkTopBarColor">#1F2937</Color>
+        <Color x:Key="DarkBackgroundColor">#1A1A1A</Color>
+        <Color x:Key="DarkForegroundColor">#FFFFFFFF</Color>
+        <Color x:Key="DarkCardColor">#2D2D2D</Color>
+        <Color x:Key="DarkBorderColor">#404040</Color>
+        <Color x:Key="DarkTopBarColor">#0F0F0F</Color>
+
         <!-- Light theme -->
         <Color x:Key="LightBackgroundColor">#F5F5F5</Color>
         <Color x:Key="LightForegroundColor">#111111</Color>
-        <Color x:Key="LightCardColor">#80FFFFFF</Color> <!-- 50% transparent white card -->
+        <Color x:Key="LightCardColor">#FFFFFF</Color>
         <Color x:Key="LightBorderColor">#CCCCCC</Color>
-        <Color x:Key="LightTopBarColor">#FFFFFF</Color>
-        <!-- Active theme (start with dark) -->
+        <Color x:Key="LightTopBarColor">#E8E8E8</Color>
+
+        <!-- Active theme (start dark) -->
         <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{StaticResource DarkBackgroundColor}"/>
         <SolidColorBrush x:Key="ForegroundBrush"       Color="{StaticResource DarkForegroundColor}"/>
         <SolidColorBrush x:Key="CardBrush"             Color="{StaticResource DarkCardColor}"/>
         <SolidColorBrush x:Key="BorderBrushColor"      Color="{StaticResource DarkBorderColor}"/>
         <SolidColorBrush x:Key="TopBarBrush"           Color="{StaticResource DarkTopBarColor}"/>
-        <ImageBrush x:Key="NoiseBrush"/>
-        <!-- Accent for toggles -->
+
+        <!-- Faint, tiled noise; image set at runtime -->
+        <ImageBrush x:Key="NoiseBrush"
+                    TileMode="Tile"
+                    Viewport="0,0,256,256"
+                    ViewportUnits="Absolute"
+                    Stretch="None"
+                    Opacity="0.07" />
+
+        <!-- Accent -->
         <SolidColorBrush x:Key="AccentBrush" Color="#4F8EF7"/>
-        <!-- Toggle Switch Style -->
+
+        <!-- Window control buttons -->
+        <Style x:Key="WindowControlButton" TargetType="Button">
+            <Setter Property="Width" Value="35"/>
+            <Setter Property="Height" Value="35"/>
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="8"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#40FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#60FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="8"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FF5555"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#FF3333"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Toggle switch -->
         <Style x:Key="ToggleSwitchStyle" TargetType="CheckBox">
             <Setter Property="Template">
                 <Setter.Value>
@@ -79,43 +551,41 @@ $xaml = @"
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Button Style -->
+
+        <!-- Navigation buttons -->
         <Style x:Key="RoundedNavButton" TargetType="Button">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="Width" Value="130"/>
-            <Setter Property="Height" Value="48"/>
-            <Setter Property="Margin" Value="7"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Height" Value="35"/>
+            <Setter Property="Margin" Value="8,5"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
-            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushColor}"/>
-            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}" 
-                                BorderThickness="{TemplateBinding BorderThickness}" 
-                                CornerRadius="16">
+                        <Border CornerRadius="8"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#22FFFFFF"/>
-                                <Setter Property="BorderBrush" Value="#FF4F8EF7"/>
-                                <Setter Property="BorderThickness" Value="3"/>
+                                <Setter Property="Background" Value="#40FFFFFF"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#22000000"/>
-                                <Setter Property="BorderBrush" Value="#FF2563EB"/>
-                                <Setter Property="BorderThickness" Value="3"/>
+                                <Setter Property="Background" Value="#60FFFFFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Button for tweaks -->
+
+        <!-- Primary rounded button -->
         <Style x:Key="RoundedButton" TargetType="Button">
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="16"/>
@@ -128,10 +598,10 @@ $xaml = @"
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}" 
-                                BorderThickness="{TemplateBinding BorderThickness}" 
-                                CornerRadius="11">
+                        <Border CornerRadius="12"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -147,198 +617,279 @@ $xaml = @"
             </Setter>
         </Style>
     </Window.Resources>
+
     <Grid>
-        <Rectangle Fill="{DynamicResource WindowBackgroundBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-        <Rectangle Fill="{DynamicResource NoiseBrush}" Opacity="0.8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <!-- Main container (borderless) with faint noise layered -->
+        <Border CornerRadius="15" Margin="5" BorderThickness="0" BorderBrush="{DynamicResource BorderBrushColor}" Name="MainBorder">
+            <Border.Background>
+                <VisualBrush>
+                    <VisualBrush.Visual>
+                        <Grid>
+                            <Border Background="{DynamicResource WindowBackgroundBrush}"/>
+                            <Border Background="{DynamicResource NoiseBrush}"/>
+                        </Grid>
+                    </VisualBrush.Visual>
+            </VisualBrush>
+        </Border.Background>
+
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <!-- Top Nav -->
-            <DockPanel Name="TopNavPanel" Background="{DynamicResource TopBarBrush}" Grid.Row="0" LastChildFill="False">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button Name="BtnHome"     Content="Home"     Style="{StaticResource RoundedNavButton}"/>
-                    <Button Name="BtnInstall"  Content="Install"  Style="{StaticResource RoundedNavButton}"/>
-                    <Button Name="BtnTweaks"   Content="Tweaks"   Style="{StaticResource RoundedNavButton}"/>
-                    <Button Name="BtnConfig"   Content="Config"   Style="{StaticResource RoundedNavButton}"/>
-                    <Button Name="BtnPrograms" Content="Programs" Style="{StaticResource RoundedNavButton}"/>
-                    <Button Name="BtnLogs"     Content="Logs"     Style="{StaticResource RoundedNavButton}"/>
-                </StackPanel>
-                <Button Name="BtnToggleTheme" Content="🌗" Width="48" Height="48"
-                        Margin="10" HorizontalAlignment="Right" VerticalAlignment="Center"
-                        DockPanel.Dock="Right"
-                        Style="{StaticResource RoundedNavButton}"/>
-            </DockPanel>
-            <!-- Main Pages -->
-            <Grid Grid.Row="1" Margin="0,0,0,0">
-                <!-- Home Page -->
-                <Grid Name="PageHome" Margin="10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <!-- PC Info -->
-                    <Border Background="{DynamicResource CardBrush}"
-                            BorderBrush="{DynamicResource BorderBrushColor}"
-                            BorderThickness="2" CornerRadius="8" Margin="10" Grid.Column="0">
-                        <StackPanel Margin="15">
-                            <TextBlock Text="PC Information" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
-                            <Separator Margin="0,5"/>
-                            <TextBlock Name="LblOS"   FontSize="16" Margin="0,5"/>
-                            <TextBlock Name="LblCPU"  FontSize="16" Margin="0,5"/>
-                            <TextBlock Name="LblRAM"  FontSize="16" Margin="0,5"/>
-                            <TextBlock Name="LblGPU"  FontSize="16" Margin="0,5"/>
-                            <TextBlock Name="LblMotherboard" FontSize="16" Margin="0,5"/>
-                            <TextBlock Name="LblBIOS" FontSize="16" Margin="0,5"/>
-                            <TextBlock Name="LblDisk" FontSize="16" Margin="0,5"/>
-                            <TextBlock Name="LblNetwork" FontSize="16" Margin="0,5"/>
-                            <TextBlock Name="LblSound" FontSize="16" Margin="0,5"/>
-                        </StackPanel>
-                    </Border>
-                    <!-- Advanced Info -->
-                    <Border Background="{DynamicResource CardBrush}"
-                            BorderBrush="{DynamicResource BorderBrushColor}"
-                            BorderThickness="2" CornerRadius="8" Margin="10" Grid.Column="1">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <DockPanel Grid.Row="0" LastChildFill="True">
-                                <TextBlock Text="Advanced Info" FontSize="20" FontWeight="Bold" Margin="15,0,0,10" VerticalAlignment="Center"/>
-                                <Button Name="BtnToggleAdvanced" Content="🙈" Width="30" Height="30" 
-                                        DockPanel.Dock="Right" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                            </DockPanel>
-                            <StackPanel Margin="15" Grid.Row="1">
-                                <Separator Margin="0,5"/>
-                                <TextBlock Name="LblRouterIP" FontSize="16" Margin="0,5"/>
-                                <TextBlock Name="LblIP"       FontSize="16" Margin="0,5"/>
-                                <TextBlock Name="LblMAC"      FontSize="16" Margin="0,5"/>
-                                <TextBlock Name="LblHWID"     FontSize="16" Margin="0,5"/>
-                                <TextBlock Name="LblPublicIP" FontSize="16" Margin="0,5"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-                </Grid>
-                <!-- Tweaks Page -->
-                <Grid Name="PageTweaks" Visibility="Collapsed" Margin="10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2.7*"/>
-                        <ColumnDefinition Width="2.3*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <!-- Advanced Tweaks (Left) -->
-                    <Border Grid.Column="0" Margin="12,8,12,8" Background="{DynamicResource CardBrush}" CornerRadius="12" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushColor}">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-                                <StackPanel Margin="24">
-                                <CheckBox Name="ChkTweak1"  Content="Placeholder Tweak 1"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak2"  Content="Placeholder Tweak 2"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak3"  Content="Placeholder Tweak 3"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak4"  Content="Placeholder Tweak 4"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak5"  Content="Placeholder Tweak 5"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak6"  Content="Placeholder Tweak 6"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak7"  Content="Placeholder Tweak 7"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak8"  Content="Placeholder Tweak 8"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak9"  Content="Placeholder Tweak 9"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak10" Content="Placeholder Tweak 10" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak11" Content="Placeholder Tweak 11" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak12" Content="Placeholder Tweak 12" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak13" Content="Placeholder Tweak 13" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak14" Content="Placeholder Tweak 14" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak15" Content="Placeholder Tweak 15" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak16" Content="Placeholder Tweak 16" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak17" Content="Placeholder Tweak 17" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak18" Content="Placeholder Tweak 18" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak19" Content="Placeholder Tweak 19" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkTweak20" Content="Placeholder Tweak 20" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                </StackPanel>
-                            </ScrollViewer>
-                            <StackPanel Grid.Row="1">
-                                <Button Name="BtnSetGameProfile" Content="Set Game Profile" Style="{StaticResource RoundedButton}" Margin="24,10,24,0" Height="44"/>
-                                <Button Name="BtnRunTweaks" Content="Run Tweaks" Style="{StaticResource RoundedButton}" Margin="24,20,24,24" Height="44"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-                    <!-- Right Side: Preferences + Set/Remove Buttons -->
-                    <StackPanel Grid.Column="1" Margin="0,8,12,8">
-                        <Border Background="{DynamicResource CardBrush}" CornerRadius="12" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushColor}" Margin="0,0,0,16">
-                            <StackPanel Margin="24">
-                                <TextBlock Text="Customize Preferences" FontSize="21" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,16"/>
-                                <!-- Toggle Switches with padding -->
-                                <CheckBox Content="Dark Theme for Windows" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Margin="0,0,0,10"/>
-                                <CheckBox Content="Bing Search in Start Menu" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Margin="0,0,0,10"/>
-                                <CheckBox Content="NumLock on Startup" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Margin="0,0,0,10"/>
-                                <CheckBox Content="Verbose Messages During Logon" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="Recommendations in Start Menu" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="Remove Settings Home Page" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="Snap Window" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Margin="0,0,0,10"/>
-                                <CheckBox Content="Snap Assist Flyout" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Margin="0,0,0,10"/>
-                                <CheckBox Content="Snap Assist Suggestion" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Name="ChkMouseAcceleration" Content="Mouse Acceleration" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="Sticky Keys" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="Show Hidden Files" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Margin="0,0,0,10"/>
-                                <CheckBox Content="Show File Extensions" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Margin="0,0,0,10"/>
-                                <CheckBox Content="Search Button in Taskbar" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="Task View Button in Taskbar" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="Center Taskbar Items" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="Widgets Button in Taskbar" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="Detailed BsOD" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                                <CheckBox Content="S3 Sleep" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Background="{DynamicResource CardBrush}" CornerRadius="12" BorderThickness="1" BorderBrush="{StaticResource BorderBrushColor}">
-                            <StackPanel Margin="24">
-                                <TextBlock Text="Reg &amp; Services" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,13"/>
-                                <Button Name="BtnSetRegTweaks" Content="Set Registry Tweaks" Style="{StaticResource RoundedButton}" Margin="0,2,0,7"/>
-                                <Button Name="BtnSetServiceTweaks" Content="Set Service Tweaks" Style="{StaticResource RoundedButton}" Margin="0,2,0,7"/>
-                            </StackPanel>
-                        </Border>
+
+            <!-- Top bar: nav on left, theme/controls on right; draggable -->
+            <Border Grid.Row="0" Background="{DynamicResource TopBarBrush}" CornerRadius="12,12,0,0" Margin="5,5,5,0" Name="TopBarBorder">
+                <Grid Height="50" Name="DragArea" Background="Transparent">
+                    <!-- Left: pages -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="15,0">
+                        <Button Name="BtnHome"     Content="Home"    Style="{StaticResource RoundedNavButton}"/>
+                        <Button Name="BtnInstall"  Content="Install" Style="{StaticResource RoundedNavButton}"/>
+                        <Button Name="BtnTweaks"   Content="Tweaks"  Style="{StaticResource RoundedNavButton}"/>
+                        <Button Name="BtnConfig"   Content="Config"  Style="{StaticResource RoundedNavButton}"/>
+                        <Button Name="BtnPrograms" Content="Programs" Style="{StaticResource RoundedNavButton}"/>
+                        <Button Name="BtnLogs"     Content="Logs"    Style="{StaticResource RoundedNavButton}"/>
+                    </StackPanel>
+
+                    <!-- Right: theme + window controls -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="15,0">
+                        <Button Name="BtnToggleTheme" Content="🌙" Style="{StaticResource WindowControlButton}" ToolTip="Toggle Theme"/>
+                        <Button Name="BtnMinimize" Content="−" Style="{StaticResource WindowControlButton}" ToolTip="Minimize"/>
+                        <Button Name="BtnMaximize" Content="□" Style="{StaticResource WindowControlButton}" ToolTip="Maximize"/>
+                        <Button Name="BtnClose" Content="✕" Style="{StaticResource CloseButton}" ToolTip="Close"/>
                     </StackPanel>
                 </Grid>
-                <!-- Logs Page -->
-                <Grid Name="PageLogs" Visibility="Collapsed" Margin="10">
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="1" CornerRadius="8">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <ScrollViewer Grid.Row="0" Margin="16,16,16,0" VerticalScrollBarVisibility="Auto">
-                                <TextBox Name="TxtLogs" FontFamily="Consolas" FontSize="14"
-                                         Foreground="{DynamicResource ForegroundBrush}"
-                                         Background="{DynamicResource CardBrush}"
-                                         BorderThickness="0"
-                                         IsReadOnly="True"
-                                         VerticalScrollBarVisibility="Auto"
-                                         Text="Logs will appear here..." />
+            </Border>
+
+            <!-- Main content -->
+            <Border Grid.Row="1" Background="{DynamicResource CardBrush}" CornerRadius="0,0,12,12" Margin="5,0,5,5">
+                <Grid Margin="25" Name="TopNavPanel">
+                    <!-- Home -->
+                    <Grid Name="PageHome">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,30,0">
+                            <TextBlock Text="PC Information" FontSize="24" FontWeight="Bold"
+                                       Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
+                            <Separator Background="{DynamicResource BorderBrushColor}" Height="1" Margin="0,0,0,20"/>
+                            <TextBlock Name="LblOS"           FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblCPU"          FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblRAM"          FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblGPU"          FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblMotherboard"  FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblBIOS"         FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblDisk"         FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblNetwork"      FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblSound"        FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="30,0,0,0">
+                            <DockPanel Margin="0,0,0,20">
+                                <TextBlock Text="Advanced Info" FontSize="24" FontWeight="Bold"
+                                           Foreground="{DynamicResource ForegroundBrush}" VerticalAlignment="Center"/>
+                                <Button Name="BtnToggleAdvanced" Content="👁" Width="30" Height="30"
+                                        DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                        Background="Transparent" BorderBrush="Transparent"
+                                        Foreground="{DynamicResource ForegroundBrush}"/>
+                            </DockPanel>
+                            <Separator Background="{DynamicResource BorderBrushColor}" Height="1" Margin="0,0,0,20"/>
+                            <TextBlock Name="LblRouterIP" FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblIP"       FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblMAC"      FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblHWID"     FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Name="LblPublicIP" FontSize="16" Margin="0,8" Foreground="{DynamicResource ForegroundBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Install -->
+                    <Grid Name="PageInstall" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="Install Applications" FontSize="24" FontWeight="Bold"
+                                   Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
+
+                        <Border Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" 
+                                CornerRadius="8" BorderBrush="{DynamicResource BorderBrushColor}" 
+                                BorderThickness="2" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="Install page content coming soon..." FontSize="16"
+                                               Foreground="{DynamicResource ForegroundBrush}"
+                                               TextWrapping="Wrap" Margin="0,0,0,20"/>
+                                </StackPanel>
                             </ScrollViewer>
-                            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,16,16">
-                                <Button Name="BtnDownloadLogs" Content="Download Logs" Style="{StaticResource RoundedNavButton}"/>
+                        </Border>
+                    </Grid>
+
+                    <!-- Tweaks -->
+                    <Grid Name="PageTweaks" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: Advanced Tweaks -->
+                        <Border Grid.Column="0" Margin="12,8,12,8" Background="{DynamicResource WindowBackgroundBrush}"
+                                CornerRadius="12" BorderThickness="2" BorderBrush="{DynamicResource BorderBrushColor}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                                    <StackPanel Margin="24">
+                                        <TextBlock Text="Advanced Tweaks" FontSize="20" FontWeight="Bold"
+                                                   Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
+                                        <CheckBox Name="ChkTweak1"  Content="Win32 Priority Separation"  Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak2"  Content="Network Throttling Index"   Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak3"  Content="Enable Game Mode"           Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak4"  Content="GPU Hardware Scheduling"    Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak5"  Content="Games Performance Tweaks"   Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak6"  Content="GameBar Disable Tweaks"     Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak7"  Content="TCP Acknowledgment Freq"    Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak8"  Content="Placeholder Tweak 8"        Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak9"  Content="Placeholder Tweak 9"        Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak10" Content="Placeholder Tweak 10"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak11" Content="Placeholder Tweak 11"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak12" Content="Placeholder Tweak 12"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak13" Content="Placeholder Tweak 13"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak14" Content="Placeholder Tweak 14"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak15" Content="Placeholder Tweak 15"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak16" Content="Placeholder Tweak 16"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak17" Content="Placeholder Tweak 17"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak18" Content="Placeholder Tweak 18"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak19" Content="Placeholder Tweak 19"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkTweak20" Content="Placeholder Tweak 20"       Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                        <CheckBox Name="ChkMouseAcceleration" Content="Disable Mouse Acceleration" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10"/>
+                                    </StackPanel>
+                                </ScrollViewer>
+
+                                <StackPanel Grid.Row="1">
+                                    <Button Name="BtnSetGameProfile" Content="Set Game Profile" Style="{StaticResource RoundedButton}" Margin="24,10,24,0" Height="44"/>
+                                    <Button Name="BtnRunTweaks" Content="Run Selected Tweaks" Style="{StaticResource RoundedButton}" Margin="24,20,24,24" Height="44"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Right: Registry & Service -->
+                        <Border Grid.Column="1" Margin="12,8,12,8" Background="{DynamicResource WindowBackgroundBrush}"
+                                CornerRadius="12" BorderThickness="2" BorderBrush="{DynamicResource BorderBrushColor}">
+                            <StackPanel Margin="24">
+                                <TextBlock Text="System Tweaks" FontSize="20" FontWeight="Bold"
+                                           Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
+                                <TextBlock Text="Apply registry and service optimizations for gaming and performance."
+                                           FontSize="14" Foreground="{DynamicResource ForegroundBrush}"
+                                           TextWrapping="Wrap" Margin="0,0,0,20"/>
+                                <Button Name="BtnSetRegTweaks" Content="Apply Registry Tweaks"
+                                        Style="{StaticResource RoundedButton}" Margin="0,10" Height="44"/>
+                                <Button Name="BtnSetServiceTweaks" Content="Apply Service Tweaks"
+                                        Style="{StaticResource RoundedButton}" Margin="0,10" Height="44"/>
                             </StackPanel>
-                        </Grid>
-                    </Border>
-                    <!-- Other Pages -->
-                    <Grid Name="PageInstall"  Visibility="Collapsed"><TextBlock Text="Install Page"  FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                    <Grid Name="PageConfig"   Visibility="Collapsed"><TextBlock Text="Config Page"   FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                    <Grid Name="PagePrograms" Visibility="Collapsed"><TextBlock Text="Programs Page" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        </Border>
+                    </Grid>
+
+                    <!-- Config -->
+                    <Grid Name="PageConfig" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="Configuration" FontSize="24" FontWeight="Bold"
+                                   Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
+
+                        <Border Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" 
+                                CornerRadius="8" BorderBrush="{DynamicResource BorderBrushColor}" 
+                                BorderThickness="2" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="Configuration page content coming soon..." FontSize="16"
+                                               Foreground="{DynamicResource ForegroundBrush}"
+                                               TextWrapping="Wrap" Margin="0,0,0,20"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+
+                    <!-- Programs -->
+                    <Grid Name="PagePrograms" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="Programs Management" FontSize="24" FontWeight="Bold"
+                                   Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
+
+                        <Border Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" 
+                                CornerRadius="8" BorderBrush="{DynamicResource BorderBrushColor}" 
+                                BorderThickness="2" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="Programs page content coming soon..." FontSize="16"
+                                               Foreground="{DynamicResource ForegroundBrush}"
+                                               TextWrapping="Wrap" Margin="0,0,0,20"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+
+                    <!-- Logs -->
+                    <Grid Name="PageLogs" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="Application Logs" FontSize="24" FontWeight="Bold"
+                                   Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
+
+                        <Border Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="8"
+                                BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="2">
+                            <ScrollViewer>
+                                <RichTextBox Name="TxtLogs"
+                                             Background="Transparent"
+                                             Foreground="{DynamicResource ForegroundBrush}"
+                                             BorderThickness="0"
+                                             IsReadOnly="True"
+                                             FontFamily="Consolas"
+                                             FontSize="14"
+                                             Margin="10"
+                                             VerticalScrollBarVisibility="Auto"/>
+                            </ScrollViewer>
+                        </Border>
+
+                        <Button Grid.Row="2" Name="BtnDownloadLogs" Content="Download Logs to Desktop"
+                                Style="{StaticResource RoundedButton}" Margin="0,20,0,0" Height="44"/>
+                    </Grid>
                 </Grid>
-            </Grid>
+            </Border>
         </Grid>
+    </Border>
+    
+    <!-- Resize Grip in bottom-right corner (visible on all pages) -->
+    <ResizeGrip Width="16" Height="16" 
+                HorizontalAlignment="Right" 
+                VerticalAlignment="Bottom" 
+                Margin="0,0,10,10"
+                Opacity="0.5"
+                Background="Transparent"/>
     </Grid>
 </Window>
 "@
 
 # ===============================
-# Load XAML
+# Load XAML (ONLY ONCE)
 # ===============================
+Add-Type -AssemblyName PresentationFramework
 $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
@@ -356,9 +907,16 @@ try {
     Write-Host "Failed to load noise.png"
 }
 
+
+
 # ===============================
-# Find UI Elements
+# Find ALL UI Elements (Window Controls + App Elements)
 # ===============================
+$BtnClose             = $window.FindName("BtnClose")
+$BtnMinimize          = $window.FindName("BtnMinimize")
+$BtnMaximize          = $window.FindName("BtnMaximize")
+$DragArea             = $window.FindName("DragArea")
+
 $BtnToggleTheme       = $window.FindName("BtnToggleTheme")
 $BtnHome              = $window.FindName("BtnHome")
 $BtnInstall           = $window.FindName("BtnInstall")
@@ -420,6 +978,156 @@ $ChkTweak20           = $window.FindName("ChkTweak20")
 $ChkMouseAcceleration = $window.FindName("ChkMouseAcceleration")
 
 # ===============================
+# Resize Grip Functionality
+# ===============================
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+
+public class ResizeHelper {
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    
+    public const uint WM_NCLBUTTONDOWN = 0x00A1;
+    public const uint HTBOTTOMRIGHT = 17;
+}
+"@
+
+# Find all ResizeGrip elements in the window
+$resizeGrips = @()
+$windowContent = $window.Content
+if ($windowContent -is [System.Windows.Controls.Grid]) {
+    foreach ($child in $windowContent.Children) {
+        if ($child -is [System.Windows.Controls.Primitives.ResizeGrip]) {
+            $resizeGrips += $child
+        }
+    }
+}
+
+# Add mouse down handler to each resize grip
+foreach ($grip in $resizeGrips) {
+    $grip.Add_PreviewMouseLeftButtonDown({
+        param($s, $e)
+        try {
+            $windowHandle = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
+            [ResizeHelper]::SendMessage($windowHandle, [ResizeHelper]::WM_NCLBUTTONDOWN, [IntPtr][ResizeHelper]::HTBOTTOMRIGHT, [IntPtr]::Zero)
+            $e.Handled = $true
+        } catch {
+            Write-Host "Resize error: $_"
+        }
+    })
+}
+
+# ===============================
+# Window dragging and controls
+# ===============================
+# Drag window by holding top bar (but not on buttons)
+$DragArea.Add_PreviewMouseLeftButtonDown({
+    param($s, $e)
+    # Only drag if not clicking on a button
+    $source = $e.OriginalSource
+    
+    # Check if clicking on button or button content
+    $element = $source
+    while ($element -ne $null) {
+        if ($element -is [System.Windows.Controls.Button]) {
+            return  # Don't drag if clicking a button
+        }
+        $element = [System.Windows.Media.VisualTreeHelper]::GetParent($element)
+    }
+    
+    # Perform drag
+    try { 
+        $window.DragMove() 
+    } catch {
+        # DragMove can fail in certain scenarios, silently ignore
+    }
+})
+
+# ===============================================================================================================================
+#                                                    Mouse Acceleration Toggle Logic
+# ===============================================================================================================================
+try {
+    $mouseSettings = Get-ItemProperty -Path "HKCU:\Control Panel\Mouse"
+    $isAccel = ($mouseSettings.MouseEnhancePointerPrecision -eq "1")
+    $ChkMouseAcceleration.IsChecked = $isAccel
+} catch {
+    $ChkMouseAcceleration.IsChecked = $false
+}
+
+function Send-SettingChange {
+    Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32 {
+    [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
+    public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out UIntPtr lpdwResult);
+}
+"@
+    $HWND_BROADCAST = [intptr]0xFFFF
+    $WM_SETTINGCHANGE = 0x001A
+    $result = [uintptr]::Zero
+    [Win32]::SendMessageTimeout($HWND_BROADCAST, $WM_SETTINGCHANGE, [uintptr]::Zero, "Control Panel\\Mouse", 2, 5000, [ref]$result) | Out-Null
+}
+
+$ChkMouseAcceleration.Add_Checked({
+    try {
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name MouseEnhancePointerPrecision -Value "1"
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name MouseSpeed -Value "1"
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name MouseThreshold1 -Value "6"
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name MouseThreshold2 -Value "10"
+        Send-SettingChange
+        Write-Host "Mouse Acceleration / Enhance pointer precision ENABLED." -ForegroundColor Green
+        Write-Log "Mouse Acceleration ENABLED"
+        [System.Windows.MessageBox]::Show("Mouse Acceleration / Enhance pointer precision ENABLED. You may need to log off/on or reopen Mouse Properties for changes to show.")
+    } catch {
+        Write-Host "Failed to ENABLE Mouse Acceleration / Enhance pointer precision: $_" -ForegroundColor Red
+        Write-Log "FAILED to enable Mouse Acceleration: $_"
+        [System.Windows.MessageBox]::Show("FAILED to enable Mouse Acceleration / Enhance pointer precision.")
+    }
+})
+
+$ChkMouseAcceleration.Add_Unchecked({
+    try {
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name MouseEnhancePointerPrecision -Value "0"
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name MouseSpeed -Value "0"
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name MouseThreshold1 -Value "0"
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name MouseThreshold2 -Value "0"
+        Send-SettingChange
+        Write-Host "Mouse Acceleration / Enhance pointer precision DISABLED." -ForegroundColor Yellow
+        Write-Log "Mouse Acceleration DISABLED"
+        [System.Windows.MessageBox]::Show("Mouse Acceleration / Enhance pointer precision DISABLED. You may need to log off/on or reopen Mouse Properties for changes to show.")
+    } catch {
+        Write-Host "Failed to DISABLE Mouse Acceleration / Enhance pointer precision: $_" -ForegroundColor Red
+        Write-Log "FAILED to disable Mouse Acceleration: $_"
+        [System.Windows.MessageBox]::Show("FAILED to disable Mouse Acceleration / Enhance pointer precision.")
+    }
+})
+
+
+
+# ===============================
+# Window Control Button Events
+# ===============================
+$BtnClose.Add_Click({ 
+    $window.Close() 
+})
+
+$BtnMinimize.Add_Click({ 
+    $window.WindowState = [System.Windows.WindowState]::Minimized 
+})
+
+$BtnMaximize.Add_Click({ 
+    if ($window.WindowState -eq [System.Windows.WindowState]::Maximized) {
+        $window.WindowState = [System.Windows.WindowState]::Normal
+        $BtnMaximize.Content = "□"
+    } else {
+        $window.WindowState = [System.Windows.WindowState]::Maximized 
+        $BtnMaximize.Content = "⧉"
+    }
+})
+
+# ===============================
 # Logging Function
 # ===============================
 function Write-Log($message) {
@@ -429,21 +1137,52 @@ function Write-Log($message) {
 }
 
 # ===============================
-# Import Mouse Acceleration Logic
-# ===============================
-. "$PSScriptRoot\Tweaks\Prefrence.ps1"
-
-
-# ===============================
 # Logs Button Logic
 # ===============================
 $BtnLogs.Add_Click({
     Show-Page $PageLogs
     $logFilePath = Join-Path $PSScriptRoot "logs.txt"
     if (Test-Path $logFilePath) {
-        $TxtLogs.Text = Get-Content $logFilePath -Raw
+        # Clear existing content
+        $TxtLogs.Document.Blocks.Clear()
+        
+        # Read log file
+        $logContent = Get-Content $logFilePath
+        
+        # Create a paragraph for the logs
+        $paragraph = New-Object System.Windows.Documents.Paragraph
+        
+        foreach ($line in $logContent) {
+            # Create a run for each line
+            $run = New-Object System.Windows.Documents.Run
+            $run.Text = $line + "`n"
+            
+            # Color based on keywords
+            if ($line -match '\b(SUCCESS|SUCCESSFULLY|SUCCESSFUL|ENABLED|COMPLETED|OK|DISABLED|DISSABLED)\b') {
+                $run.Foreground = [System.Windows.Media.Brushes]::LimeGreen
+            }
+            elseif ($line -match '\b(ERROR|FAILED|FAILURE|EXCEPTION|CRITICAL)\b') {
+                $run.Foreground = [System.Windows.Media.Brushes]::Red
+            }
+            elseif ($line -match '\b(WARNING|WARN)\b') {
+                $run.Foreground = [System.Windows.Media.Brushes]::Orange
+            }
+            else {
+                # Default color based on theme
+                $run.Foreground = $window.Resources["ForegroundBrush"]
+            }
+            
+            $paragraph.Inlines.Add($run)
+        }
+        
+        $TxtLogs.Document.Blocks.Add($paragraph)
     } else {
-        $TxtLogs.Text = "No log file found."
+        $TxtLogs.Document.Blocks.Clear()
+        $paragraph = New-Object System.Windows.Documents.Paragraph
+        $run = New-Object System.Windows.Documents.Run
+        $run.Text = "No log file found."
+        $paragraph.Inlines.Add($run)
+        $TxtLogs.Document.Blocks.Add($paragraph)
     }
 })
 
@@ -530,27 +1269,63 @@ $BtnToggleAdvanced.Add_Click({
     }
 })
 
+
 # ===============================
 # Theme Toggle Logic
 # ===============================
 $global:darkMode = $true
 $BtnToggleTheme.Add_Click({
-    if ($global:darkMode) {
-        $window.Resources["WindowBackgroundBrush"] = [System.Windows.Media.SolidColorBrush]$window.Resources["LightBackgroundColor"]
-        $window.Resources["ForegroundBrush"]       = [System.Windows.Media.SolidColorBrush]$window.Resources["LightForegroundColor"]
-        $window.Resources["CardBrush"]             = [System.Windows.Media.SolidColorBrush]$window.Resources["LightCardColor"]
-        $window.Resources["BorderBrushColor"]      = [System.Windows.Media.SolidColorBrush]$window.Resources["LightBorderColor"]
-        $window.Resources["TopBarBrush"]           = [System.Windows.Media.SolidColorBrush]$window.Resources["LightTopBarColor"]
-        $TopNavPanel.Background = $window.Resources["TopBarBrush"]
-        $global:darkMode = $false
-    } else {
-        $window.Resources["WindowBackgroundBrush"] = [System.Windows.Media.SolidColorBrush]$window.Resources["DarkBackgroundColor"]
-        $window.Resources["ForegroundBrush"]       = [System.Windows.Media.SolidColorBrush]$window.Resources["DarkForegroundColor"]
-        $window.Resources["CardBrush"]             = [System.Windows.Media.SolidColorBrush]$window.Resources["DarkCardColor"]
-        $window.Resources["BorderBrushColor"]      = [System.Windows.Media.SolidColorBrush]$window.Resources["DarkBorderColor"]
-        $window.Resources["TopBarBrush"]           = [System.Windows.Media.SolidColorBrush]$window.Resources["DarkTopBarColor"]
-        $TopNavPanel.Background = $window.Resources["TopBarBrush"]
-        $global:darkMode = $true
+    try {
+        if ($global:darkMode) {
+            # Switch to Light theme
+            $lightBg = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(245, 245, 245))
+            $lightFg = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(17, 17, 17))
+            $lightCard = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(255, 255, 255))
+            $lightBorder = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(204, 204, 204))
+            $lightTopBar = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(232, 232, 232))
+            
+            $window.Resources.Remove("WindowBackgroundBrush")
+            $window.Resources.Remove("ForegroundBrush")
+            $window.Resources.Remove("CardBrush")
+            $window.Resources.Remove("BorderBrushColor")
+            $window.Resources.Remove("TopBarBrush")
+            
+            $window.Resources.Add("WindowBackgroundBrush", $lightBg)
+            $window.Resources.Add("ForegroundBrush", $lightFg)
+            $window.Resources.Add("CardBrush", $lightCard)
+            $window.Resources.Add("BorderBrushColor", $lightBorder)
+            $window.Resources.Add("TopBarBrush", $lightTopBar)
+            
+            $BtnToggleTheme.Content = "☀️"
+            $global:darkMode = $false
+        } else {
+            # Switch to Dark theme
+            $darkBg = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(26, 26, 26))
+            $darkFg = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(255, 255, 255))
+            $darkCard = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(45, 45, 45))
+            $darkBorder = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(64, 64, 64))
+            $darkTopBar = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(15, 15, 15))
+            
+            $window.Resources.Remove("WindowBackgroundBrush")
+            $window.Resources.Remove("ForegroundBrush")
+            $window.Resources.Remove("CardBrush")
+            $window.Resources.Remove("BorderBrushColor")
+            $window.Resources.Remove("TopBarBrush")
+            
+            $window.Resources.Add("WindowBackgroundBrush", $darkBg)
+            $window.Resources.Add("ForegroundBrush", $darkFg)
+            $window.Resources.Add("CardBrush", $darkCard)
+            $window.Resources.Add("BorderBrushColor", $darkBorder)
+            $window.Resources.Add("TopBarBrush", $darkTopBar)
+            
+            $BtnToggleTheme.Content = "🌙"
+            $global:darkMode = $true
+        }
+        
+        # Force UI refresh
+        $window.UpdateLayout()
+    } catch {
+        Write-Host "Theme switch error: $_" -ForegroundColor Red
     }
 })
 
@@ -563,6 +1338,58 @@ function Show-Page($page) {
     }
     $page.Visibility = "Visible"
 }
+
+# ===============================
+# Page Template Function
+# ===============================
+# Use this to create new page XAML quickly
+function Get-PageTemplate {
+    param([string]$PageName = "NewPage")
+    
+    return @"
+<!-- $PageName -->
+<Grid Name="Page$PageName" Visibility="Collapsed">
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Header -->
+    <TextBlock Grid.Row="0" Text="$PageName" FontSize="24" FontWeight="Bold"
+               Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
+
+    <!-- Content Area -->
+    <Border Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" 
+            CornerRadius="8" BorderBrush="{DynamicResource BorderBrushColor}" 
+            BorderThickness="2" Padding="20">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Content goes here..." FontSize="16"
+                           Foreground="{DynamicResource ForegroundBrush}"
+                           TextWrapping="Wrap" Margin="0,0,0,20"/>
+                
+                <!-- Add your controls here -->
+                
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+
+    <!-- Footer (optional) -->
+    <StackPanel Grid.Row="2" Orientation="Horizontal" 
+                HorizontalAlignment="Right" Margin="0,20,0,0">
+        <Button Name="Btn${PageName}Action1" Content="Action 1" 
+                Style="{StaticResource RoundedButton}" Margin="5"/>
+        <Button Name="Btn${PageName}Action2" Content="Action 2" 
+                Style="{StaticResource RoundedButton}" Margin="5"/>
+    </StackPanel>
+</Grid>
+"@
+}
+
+# Example usage (commented out):
+# Write-Host (Get-PageTemplate -PageName "Settings")
+# Write-Host (Get-PageTemplate -PageName "About")
 
 $BtnHome.Add_Click({ Show-Page $PageHome })
 $BtnInstall.Add_Click({ Show-Page $PageInstall })
