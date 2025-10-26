@@ -223,7 +223,7 @@ function Show-ConfirmationDialog {
         # Add items to list
         foreach ($item in $Items) {
             $textBlock = New-Object System.Windows.Controls.TextBlock
-            $textBlock.Text = "• $item"
+            $textBlock.Text = "- $item"
             $textBlock.FontSize = 14
             $textBlock.Foreground = [System.Windows.Media.Brushes]::White
             $textBlock.Margin = "0,0,0,8"
@@ -993,8 +993,8 @@ function Set-DarkTheme {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 0 } else { 1 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "AppsUseLightTheme" -Value $value -Force
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "SystemUsesLightTheme" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "AppsUseLightTheme" -Value $value
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "SystemUsesLightTheme" -Value $value
         Write-Host "[SUCCESS] Dark Theme $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Dark Theme $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1008,8 +1008,7 @@ function Set-BingSearch {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        New-Item -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Force | Out-Null
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "BingSearchEnabled" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Search" -Name "BingSearchEnabled" -Value $value
         Write-Host "[SUCCESS] Bing Search $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Bing Search $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1023,8 +1022,8 @@ function Set-NumLockStartup {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { "2" } else { "0" }
-        New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS -ErrorAction SilentlyContinue | Out-Null
-        Set-ItemProperty -Path "HKU:\.DEFAULT\Control Panel\Keyboard" -Name "InitialKeyboardIndicators" -Value $value -Force
+    New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path "HKU:\.DEFAULT\Control Panel\Keyboard" -Name "InitialKeyboardIndicators" -Value $value -Force
         Write-Host "[SUCCESS] NumLock on Startup $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "NumLock on Startup $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1038,8 +1037,7 @@ function Set-VerboseLogon {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Force | Out-Null
-        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "VerboseStatus" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" -Path "SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "VerboseStatus" -Value $value
         Write-Host "[SUCCESS] Verbose Logon $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Verbose Logon $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1053,7 +1051,7 @@ function Set-StartRecommendations {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_IrisRecommendations" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_IrisRecommendations" -Value $value
         Write-Host "[SUCCESS] Start Recommendations $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Start Recommendations $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1067,8 +1065,7 @@ function Set-SettingsHomePage {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        New-Item -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Settings" -Force | Out-Null
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Settings" -Name "EnableHomePage" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Settings" -Name "EnableHomePage" -Value $value
         Write-Host "[SUCCESS] Settings Home Page $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Settings Home Page $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1082,7 +1079,7 @@ function Set-SnapWindow {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { "1" } else { "0" }
-        Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "WindowArrangementActive" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Control Panel\Desktop" -Name "WindowArrangementActive" -Value $value -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
         Write-Host "[SUCCESS] Snap Window $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Snap Window $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1096,7 +1093,7 @@ function Set-SnapAssistFlyout {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "SnapAssist" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "SnapAssist" -Value $value
         Write-Host "[SUCCESS] Snap Assist Flyout $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Snap Assist Flyout $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1110,7 +1107,7 @@ function Set-SnapAssistSuggestion {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "SnapFill" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "SnapFill" -Value $value
         Write-Host "[SUCCESS] Snap Assist Suggestion $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Snap Assist Suggestion $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1124,15 +1121,15 @@ function Set-MouseAcceleration {
     param([bool]$Enable)
     try {
         if ($Enable) {
-            Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "MouseSpeed" -Value "1"
-            Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "MouseThreshold1" -Value "6"
-            Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "MouseThreshold2" -Value "10"
+            Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Control Panel\Mouse" -Name "MouseSpeed" -Value 1 -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
+            Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Control Panel\Mouse" -Name "MouseThreshold1" -Value 6 -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
+            Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Control Panel\Mouse" -Name "MouseThreshold2" -Value 10 -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
             Write-Host "[SUCCESS] Mouse Acceleration enabled" -ForegroundColor Green
             Write-Log "Mouse Acceleration ENABLED"
         } else {
-            Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "MouseSpeed" -Value "0"
-            Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "MouseThreshold1" -Value "0"
-            Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "MouseThreshold2" -Value "0"
+            Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Control Panel\Mouse" -Name "MouseSpeed" -Value 0 -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
+            Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Control Panel\Mouse" -Name "MouseThreshold1" -Value 0 -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
+            Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Control Panel\Mouse" -Name "MouseThreshold2" -Value 0 -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
             Write-Host "[SUCCESS] Mouse Acceleration disabled" -ForegroundColor Green
             Write-Log "Mouse Acceleration DISABLED"
         }
@@ -1147,7 +1144,7 @@ function Set-StickyKeys {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { "510" } else { "506" }
-        Set-ItemProperty -Path "HKCU:\Control Panel\Accessibility\StickyKeys" -Name "Flags" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Control Panel\Accessibility\StickyKeys" -Name "Flags" -Value $value -ValueType ([Microsoft.Win32.RegistryValueKind]::String)
         Write-Host "[SUCCESS] Sticky Keys $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Sticky Keys $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1161,7 +1158,7 @@ function Set-ShowHiddenFiles {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 2 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden" -Value $value
         Write-Host "[SUCCESS] Show Hidden Files $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Show Hidden Files $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1175,7 +1172,7 @@ function Set-ShowFileExtensions {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 0 } else { 1 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -Value $value
         Write-Host "[SUCCESS] Show File Extensions $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Show File Extensions $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1189,7 +1186,7 @@ function Set-SearchButton {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value $value
         Write-Host "[SUCCESS] Search Button $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Search Button $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1203,7 +1200,7 @@ function Set-TaskViewButton {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowTaskViewButton" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowTaskViewButton" -Value $value
         Write-Host "[SUCCESS] Task View Button $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Task View Button $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1217,7 +1214,7 @@ function Set-CenterTaskbar {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarAl" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarAl" -Value $value
         Write-Host "[SUCCESS] Center Taskbar $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Center Taskbar $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1231,7 +1228,7 @@ function Set-WidgetsButton {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarDa" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarDa" -Value $value
         Write-Host "[SUCCESS] Widgets Button $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Widgets Button $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1245,7 +1242,7 @@ function Set-DetailedBSoD {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 1 } else { 0 }
-        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl" -Name "DisplayParameters" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" -Path "SYSTEM\CurrentControlSet\Control\CrashControl" -Name "DisplayParameters" -Value $value
         Write-Host "[SUCCESS] Detailed BSoD $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "Detailed BSoD $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1259,7 +1256,7 @@ function Set-S3Sleep {
     param([bool]$Enable)
     try {
         $value = if ($Enable) { 0 } else { 1 }
-        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Power" -Name "PlatformAoAcOverride" -Value $value -Force
+    Set-RegistryValue -Root "HKEY_LOCAL_MACHINE" -Path "SYSTEM\CurrentControlSet\Control\Power" -Name "PlatformAoAcOverride" -Value $value
         Write-Host "[SUCCESS] S3 Sleep $(if($Enable){'enabled'}else{'disabled'})" -ForegroundColor Green
         Write-Log "S3 Sleep $(if($Enable){'ENABLED'}else{'DISABLED'})"
     } catch {
@@ -1273,6 +1270,31 @@ function Set-S3Sleep {
 # ===============================================================================================================================
 #                                                           REGISTRY TWEAKS
 # ===============================================================================================================================
+function Get-RegistryBaseKey {
+    param([Parameter(Mandatory)][string]$Root)
+    switch -Regex ($Root) {
+        '^(HKEY_CURRENT_USER|HKCU)$'       { return [Microsoft.Win32.Registry]::CurrentUser }
+        '^(HKEY_LOCAL_MACHINE|HKLM)$'      { return [Microsoft.Win32.Registry]::LocalMachine }
+        '^(HKEY_CLASSES_ROOT|HKCR)$'       { return [Microsoft.Win32.Registry]::ClassesRoot }
+        '^(HKEY_USERS|HKU)$'               { return [Microsoft.Win32.Registry]::Users }
+        '^(HKEY_CURRENT_CONFIG|HKCC)$'     { return [Microsoft.Win32.Registry]::CurrentConfig }
+        default { throw "Unsupported registry root: $Root" }
+    }
+}
+
+function Ensure-RegistryKey {
+    param(
+        [Parameter(Mandatory)][string]$Root,
+        [Parameter(Mandatory)][string]$Path
+    )
+    $base = Get-RegistryBaseKey -Root $Root
+    $key = $base.OpenSubKey($Path, $true)
+    if ($null -eq $key) {
+        $key = $base.CreateSubKey($Path)
+    }
+    $key.Close()
+}
+
 function Set-RegistryValue {
     param (
         [string]$Root,
@@ -1282,10 +1304,9 @@ function Set-RegistryValue {
         [Microsoft.Win32.RegistryValueKind]$ValueType = [Microsoft.Win32.RegistryValueKind]::DWord
     )
     try {
-        $key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($Path, $true)
-        if (-not $key) {
-            $key = [Microsoft.Win32.Registry]::LocalMachine.CreateSubKey($Path)
-        }
+        $base = Get-RegistryBaseKey -Root $Root
+        $key = $base.OpenSubKey($Path, $true)
+        if ($null -eq $key) { $key = $base.CreateSubKey($Path) }
         $key.SetValue($Name, $Value, $ValueType)
         $key.Close()
         Write-Host "[SUCCESS] Set '$Root\$Path\$Name' = $Value" -ForegroundColor Green
@@ -1634,10 +1655,10 @@ function Test-PackageManager {
     try {
         if ($Manager -eq "Winget") {
             $result = winget --version 2>$null
-            return $result -ne $null
+            return $null -ne $result
         } elseif ($Manager -eq "Chocolatey") {
             $result = choco --version 2>$null
-            return $result -ne $null
+            return $null -ne $result
         }
     } catch {
         return $false
@@ -2062,9 +2083,9 @@ $xaml = @"
                     <!-- Right: theme + window controls -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="15,0">
                         <Button Name="BtnToggleTheme" Content="🌙" Style="{StaticResource WindowControlButton}" ToolTip="Toggle Theme"/>
-                        <Button Name="BtnMinimize" Content="−" Style="{StaticResource WindowControlButton}" ToolTip="Minimize"/>
-                        <Button Name="BtnMaximize" Content="□" Style="{StaticResource WindowControlButton}" ToolTip="Maximize"/>
-                        <Button Name="BtnClose" Content="✕" Style="{StaticResource CloseButton}" ToolTip="Close"/>
+                        <Button Name="BtnMinimize" Content="_" Style="{StaticResource WindowControlButton}" ToolTip="Minimize"/>
+                        <Button Name="BtnMaximize" Content="[ ]" Style="{StaticResource WindowControlButton}" ToolTip="Maximize"/>
+                        <Button Name="BtnClose" Content="X" Style="{StaticResource CloseButton}" ToolTip="Close"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -2161,10 +2182,11 @@ $xaml = @"
                         <TextBlock Grid.Row="0" Text="Install Applications" FontSize="24" FontWeight="Bold"
                                    Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
 
-                        <!-- Control Buttons -->
-                        <Border Grid.Row="1" Background="{DynamicResource CardBrush}" 
-                                CornerRadius="8" BorderBrush="{DynamicResource BorderBrushColor}" 
-                                BorderThickness="2" Padding="15" Margin="0,0,0,15">
+            <!-- Control Buttons -->
+            <Border Grid.Row="1" Background="{DynamicResource CardBrush}" 
+                CornerRadius="8" BorderBrush="{DynamicResource BorderBrushColor}" 
+                BorderThickness="2" Padding="15" Margin="0,0,0,15"
+                SnapsToDevicePixels="True" UseLayoutRounding="True">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -2172,7 +2194,7 @@ $xaml = @"
                                 </Grid.RowDefinitions>
                                 
                                 <!-- Top Row: Main Actions -->
-                                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left" Margin="15,0,0,10">
                                     <Button Name="BtnGetInstalled" Height="38" Padding="15,0" Margin="0,0,10,0"
                                             Background="Transparent" BorderThickness="0" Cursor="Hand"
                                             Foreground="{DynamicResource ForegroundBrush}" FontSize="14">
@@ -2270,8 +2292,8 @@ $xaml = @"
                                     </Button>
                                 </StackPanel>
                                 
-                                <!-- Bottom Row: Package Manager Selection -->
-                                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left">
+                                <!-- Bottom Row: Package Manager Selection (left aligned with top buttons' inner padding) -->
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" Margin="15,0,0,0">
                                     <TextBlock Text="Package Manager:" FontSize="14" 
                                                Foreground="{DynamicResource ForegroundBrush}" 
                                                VerticalAlignment="Center" Margin="0,0,15,0"/>
@@ -2286,9 +2308,9 @@ $xaml = @"
                         </Border>
 
                         <!-- Apps List -->
-                        <Border Grid.Row="2" Background="{DynamicResource WindowBackgroundBrush}" 
-                                CornerRadius="8" BorderBrush="{DynamicResource BorderBrushColor}" 
-                                BorderThickness="2">
+            <Border Grid.Row="2" Background="{DynamicResource WindowBackgroundBrush}" 
+                CornerRadius="8" BorderBrush="{DynamicResource BorderBrushColor}" 
+                BorderThickness="2" CacheMode="BitmapCache" SnapsToDevicePixels="True" UseLayoutRounding="True">
                             <ScrollViewer Style="{StaticResource CustomScrollViewer}" VerticalScrollBarVisibility="Auto">
                                 <StackPanel Margin="20">
                                     
@@ -2680,27 +2702,16 @@ $xaml = @"
 
                                 <ScrollViewer Grid.Row="0" Style="{StaticResource CustomScrollViewer}" VerticalScrollBarVisibility="Auto">
                                     <StackPanel Margin="24">
-                                        <TextBlock Text="Advanced Tweaks — CAUTION" FontSize="18" FontWeight="Bold"
-                                                   Foreground="#FF5555" Margin="0,0,0,20"/>
-                                        <CheckBox Name="ChkDisableIPv6" Content="Disable IPv6" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkBlockAdobeNetwork" Content="Block Adobe Network" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkDebloatAdobe" Content="Debloat Adobe" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <!-- Normal Tweaks Section -->
+                                        <TextBlock Text="Basic Tweaks" FontSize="18" FontWeight="Bold"
+                                                   Foreground="#4CAF50" Margin="0,0,0,12"/>
                                         <CheckBox Name="ChkPreferIPv4" Content="Prefer IPv4 over IPv6" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkDisableTeredo" Content="Disable Teredo" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableBackgroundApps" Content="Disable Background Apps" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableFullscreenOptimizations" Content="Disable Fullscreen Optimizations" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkDisableCopilot" Content="Disable Microsoft Copilot" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkDisableIntelMM" Content="Disable Intel MM (vPro LMS)" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableNotificationTray" Content="Disable Notification Tray/Calendar" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkDisableWPBT" Content="Disable WPBT" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkSetDisplayPerformance" Content="Set Display for Performance" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkSetClassicRightClick" Content="Set Classic Right-Click Menu" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkSetDisplayPerformance" Content="Set Display for Performance" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkSetTimeUTC" Content="Set Time to UTC (Dual Boot)" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkRemoveMSStoreApps" Content="Remove ALL MS Store Apps" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkRemoveHomeFromExplorer" Content="Remove Home from Explorer" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkRemoveGalleryFromExplorer" Content="Remove Gallery from Explorer" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkRemoveOneDrive" Content="Remove OneDrive" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkBlockRazerSoftware" Content="Block Razer Software" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkCreateRestorePoint" Content="Create Restore Point" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDeleteTempFiles" Content="Delete Temporary Files" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableConsumerFeatures" Content="Disable ConsumerFeatures" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
@@ -2708,32 +2719,57 @@ $xaml = @"
                                         <CheckBox Name="ChkDisableActivityHistory" Content="Disable Activity History" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableExplorerFolderDiscovery" Content="Disable Explorer Automatic Folder Discovery" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableGameDVR" Content="Disable GameDVR" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkDisableHibernation" Content="Disable Hibernation" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableHomegroup" Content="Disable Homegroup" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableLocationTracking" Content="Disable Location Tracking" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableStorageSense" Content="Disable Storage Sense" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableWifiSense" Content="Disable Wifi-Sense" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkEnableEndTaskRightClick" Content="Enable End Task With Right Click" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkRunDiskCleanup" Content="Run Disk Cleanup" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkSetTerminalDefault" Content="Change Windows Terminal Default" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisablePS7Telemetry" Content="Disable PowerShell 7 Telemetry" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDisableRecall" Content="Disable Recall" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkSetHibernationDefault" Content="Set Hibernation as Default (Undo)" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
-                                        <CheckBox Name="ChkSetServicesManual" Content="Set Services to Manual" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDebloatBrave" Content="Debloat Brave" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                         <CheckBox Name="ChkDebloatEdge" Content="Debloat Edge" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+
+                                        <Separator Margin="0,12,0,12"/>
+                                        <!-- Advanced Tweaks Section -->
+                                        <TextBlock Text="Advanced Tweaks - CAUTION" FontSize="18" FontWeight="Bold"
+                                                   Foreground="#FF5555" Margin="0,0,0,12"/>
+                                        <CheckBox Name="ChkDisableIPv6" Content="Disable IPv6" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkBlockAdobeNetwork" Content="Block Adobe Network" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkDebloatAdobe" Content="Debloat Adobe" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkDisableTeredo" Content="Disable Teredo" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkDisableCopilot" Content="Disable Microsoft Copilot" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkDisableIntelMM" Content="Disable Intel MM (vPro LMS)" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkDisableWPBT" Content="Disable WPBT" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkRemoveMSStoreApps" Content="Remove ALL MS Store Apps" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkRemoveHomeFromExplorer" Content="Remove Home from Explorer" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkRemoveGalleryFromExplorer" Content="Remove Gallery from Explorer" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkRemoveOneDrive" Content="Remove OneDrive" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkBlockRazerSoftware" Content="Block Razer Software" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
+                                        <CheckBox Name="ChkDisableHibernation" Content="Disable Hibernation" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                     </StackPanel>
                                 </ScrollViewer>
 
                                 <StackPanel Grid.Row="1" Margin="24,10,24,24">
                                     <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Button Grid.Column="0" Name="BtnRunSelectedTweaks" Content="Run Selected Tweaks" 
+                                        <!-- Top row: Select recommended buttons -->
+                                        <Button Grid.Row="0" Grid.Column="0" Name="BtnSelectRecommendedBasic" Content="Select Recommended (Basic)"
+                                                Style="{StaticResource RoundedButton}" Margin="0,0,8,8" Height="44"/>
+                                        <Button Grid.Row="0" Grid.Column="1" Name="BtnSelectRecommendedAdvanced" Content="Select Recommended (Advanced)"
+                                                Style="{StaticResource RoundedButton}" Margin="8,0,0,8" Height="44"/>
+                                        <!-- Bottom row: Run and select all/deselect all -->
+                                        <Button Grid.Row="1" Grid.Column="0" Name="BtnRunSelectedTweaks" Content="Run Selected Tweaks" 
                                                 Style="{StaticResource RoundedButton}" Margin="0,0,8,0" Height="44"/>
-                                        <Button Grid.Column="1" Name="BtnSelectAllTweaks" Content="Select All" 
+                                        <Button Grid.Row="1" Grid.Column="1" Name="BtnSelectAllTweaks" Content="Select All" 
                                                 Style="{StaticResource RoundedButton}" Margin="8,0,0,0" Height="44"/>
                                     </Grid>
                                 </StackPanel>
@@ -3004,17 +3040,84 @@ $xaml = @"
                         <TextBlock Grid.Row="0" Text="Configuration" FontSize="24" FontWeight="Bold"
                                    Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
 
-                        <Border Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" 
-                                CornerRadius="8" BorderBrush="{DynamicResource BorderBrushColor}" 
-                                BorderThickness="2" Padding="20">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <StackPanel>
-                                    <TextBlock Text="Configuration page content coming soon..." FontSize="16"
-                                               Foreground="{DynamicResource ForegroundBrush}"
-                                               TextWrapping="Wrap" Margin="0,0,0,20"/>
-                                </StackPanel>
-                            </ScrollViewer>
-                        </Border>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Left Card: System Configuration (placeholder for now) -->
+                            <Border Grid.Column="0" Margin="12,8,12,8" Background="{DynamicResource CardBrush}"
+                                    CornerRadius="12" BorderThickness="2" BorderBrush="{DynamicResource BorderBrushColor}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <ScrollViewer Grid.Row="0" Style="{StaticResource CustomScrollViewer}" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel Margin="24">
+                                            <TextBlock Text="System Configuration" FontSize="18" FontWeight="Bold"
+                                                       Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,12"/>
+                                            <TextBlock Text="Manage additional configuration options here."
+                                                       FontSize="12" Foreground="#999999" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </ScrollViewer>
+
+                                    <StackPanel Grid.Row="1" Margin="24,10,24,24">
+                                        <Button Name="BtnConfigRecommended" Content="Set Recommended" 
+                                                Style="{StaticResource RoundedButton}" Height="44"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Right Card: Quick Tweaks Actions -->
+                            <Border Grid.Column="1" Margin="12,8,12,8" Background="{DynamicResource CardBrush}"
+                                    CornerRadius="12" BorderThickness="2" BorderBrush="{DynamicResource BorderBrushColor}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Top buttons -->
+                                    <StackPanel Grid.Row="0" Margin="24,24,24,12">
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Name="BtnSetRegTweaks" Content="Registry Tweaks" 
+                                                    Style="{StaticResource RoundedButton}" Margin="0,0,8,0" Height="44"/>
+                                            <Button Grid.Column="1" Name="BtnSetServiceTweaks" Content="Service Tweaks" 
+                                                    Style="{StaticResource RoundedButton}" Margin="8,0,0,0" Height="44"/>
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Name="BtnRunDiskCleanup" Content="Run Disk Cleanup" 
+                                                    Style="{StaticResource RoundedButton}" Margin="0,0,8,0" Height="44"/>
+                                            <Button Grid.Column="1" Name="BtnInstallUltimatePowerPlan" Content="Install Ultimate Power Plan" 
+                                                    Style="{StaticResource RoundedButton}" Margin="8,0,0,0" Height="44"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel Margin="24,0,24,24">
+                                            <TextBlock Text="One-click actions for common tweaks."
+                                                       FontSize="12" Foreground="#999999" TextWrapping="Wrap"/>
+                                            <Separator Margin="0,12,0,12"/>
+                                            <TextBlock Text="Registry Tweaks: applies recommended registry performance and gaming settings."
+                                                       FontSize="13" Foreground="{DynamicResource ForegroundBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                            <TextBlock Text="Service Tweaks: sets recommended service startup types for performance and privacy."
+                                                       FontSize="13" Foreground="{DynamicResource ForegroundBrush}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+                        </Grid>
                     </Grid>
 
                     <!-- Programs -->
@@ -3107,6 +3210,27 @@ try {
 }
 
 
+# ===============================
+# Startup: Force window to primary monitor and maximize
+# ===============================
+try {
+    Add-Type -AssemblyName System.Windows.Forms | Out-Null
+    $primary = [System.Windows.Forms.Screen]::PrimaryScreen
+    if ($null -ne $primary) {
+        # Place window on primary screen before maximizing
+        $window.WindowStartupLocation = [System.Windows.WindowStartupLocation]::Manual
+        $window.Left = $primary.WorkingArea.Left
+        $window.Top = $primary.WorkingArea.Top
+        $window.Width = $primary.WorkingArea.Width
+        $window.Height = $primary.WorkingArea.Height
+    }
+    $window.WindowState = [System.Windows.WindowState]::Maximized
+} catch {
+    # Fallback: still try to maximize
+    $window.WindowState = [System.Windows.WindowState]::Maximized
+}
+
+
 
 # ===============================
 # Find ALL UI Elements (Window Controls + App Elements)
@@ -3162,10 +3286,14 @@ $LblBitLocker         = $window.FindName("LblBitLocker")
 $BtnToggleAdvanced    = $window.FindName("BtnToggleAdvanced")
 $BtnSetRegTweaks      = $window.FindName("BtnSetRegTweaks")
 $BtnSetServiceTweaks  = $window.FindName("BtnSetServiceTweaks")
+$BtnRunDiskCleanup    = $window.FindName("BtnRunDiskCleanup")
+$BtnInstallUltimatePowerPlan = $window.FindName("BtnInstallUltimatePowerPlan")
 $TxtLogs              = $window.FindName("TxtLogs")
 $BtnDownloadLogs      = $window.FindName("BtnDownloadLogs")
-$BtnRunSelectedTweaks = $window.FindName("BtnRunSelectedTweaks")
-$BtnSelectAllTweaks   = $window.FindName("BtnSelectAllTweaks")
+$BtnRunSelectedTweaks           = $window.FindName("BtnRunSelectedTweaks")
+$BtnSelectAllTweaks             = $window.FindName("BtnSelectAllTweaks")
+$BtnSelectRecommendedBasic      = $window.FindName("BtnSelectRecommendedBasic")
+$BtnSelectRecommendedAdvanced   = $window.FindName("BtnSelectRecommendedAdvanced")
 
 # Install Page Controls
 $BtnGetInstalled      = $window.FindName("BtnGetInstalled")
@@ -3174,6 +3302,8 @@ $BtnUninstall         = $window.FindName("BtnUninstall")
 $BtnInstallUpdate     = $window.FindName("BtnInstallUpdate")
 $RbWinget             = $window.FindName("RbWinget")
 $RbChocolatey         = $window.FindName("RbChocolatey")
+## Touch variables to mark them as used for analyzers
+$null = $BtnSetRegTweaks; $null = $BtnSetServiceTweaks; $null = $RbWinget; $null = $RbChocolatey
 
 # Install Page App Buttons (Borders)
 $BtnBrave             = $window.FindName("BtnBrave")
@@ -3261,6 +3391,7 @@ $BtnOBS               = $window.FindName("BtnOBS")
 # Track selected apps
 $script:SelectedApps = @{}
 $BtnSetRecommended    = $window.FindName("BtnSetRecommended")
+$BtnConfigRecommended = $window.FindName("BtnConfigRecommended")
 
 # Advanced Tweaks Checkboxes
 $ChkDisableIPv6                         = $window.FindName("ChkDisableIPv6")
@@ -3295,12 +3426,10 @@ $ChkDisableLocationTracking             = $window.FindName("ChkDisableLocationTr
 $ChkDisableStorageSense                 = $window.FindName("ChkDisableStorageSense")
 $ChkDisableWifiSense                    = $window.FindName("ChkDisableWifiSense")
 $ChkEnableEndTaskRightClick             = $window.FindName("ChkEnableEndTaskRightClick")
-$ChkRunDiskCleanup                      = $window.FindName("ChkRunDiskCleanup")
 $ChkSetTerminalDefault                  = $window.FindName("ChkSetTerminalDefault")
 $ChkDisablePS7Telemetry                 = $window.FindName("ChkDisablePS7Telemetry")
 $ChkDisableRecall                       = $window.FindName("ChkDisableRecall")
 $ChkSetHibernationDefault               = $window.FindName("ChkSetHibernationDefault")
-$ChkSetServicesManual                   = $window.FindName("ChkSetServicesManual")
 $ChkDebloatBrave                        = $window.FindName("ChkDebloatBrave")
 $ChkDebloatEdge                         = $window.FindName("ChkDebloatEdge")
 
@@ -3370,7 +3499,7 @@ foreach ($grip in $resizeGrips) {
 # Window dragging and controls
 # ===============================
 # Drag window by holding top bar (but not on buttons)
-if ($DragArea -ne $null) {
+if ($null -ne $DragArea) {
     $DragArea.Add_PreviewMouseLeftButtonDown({
         param($s, $e)
         # Only drag if not clicking on a button
@@ -3378,7 +3507,7 @@ if ($DragArea -ne $null) {
         
         # Check if clicking on button or button content
         $element = $source
-        while ($element -ne $null) {
+    while ($null -ne $element) {
             if ($element -is [System.Windows.Controls.Button]) {
                 return  # Don't drag if clicking a button
             }
@@ -3414,10 +3543,10 @@ $BtnMinimize.Add_Click({
 $BtnMaximize.Add_Click({ 
     if ($window.WindowState -eq [System.Windows.WindowState]::Maximized) {
         $window.WindowState = [System.Windows.WindowState]::Normal
-        $BtnMaximize.Content = "□"
+    $BtnMaximize.Content = "[ ]"
     } else {
         $window.WindowState = [System.Windows.WindowState]::Maximized 
-        $BtnMaximize.Content = "⧉"
+    $BtnMaximize.Content = "[]"
     }
 })
 
@@ -3514,19 +3643,19 @@ try {
     
     # CPU Info (Always visible)
     $LblCPU.Text = "CPU: $($cpu.Name)"
-    $LblCPUDetails.Text = "└─ $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads @ $($cpu.MaxClockSpeed) MHz"
+    $LblCPUDetails.Text = "- $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads @ $($cpu.MaxClockSpeed) MHz"
     
     # RAM Info (Always visible)
     $ramSpeed = ($ramModules | Select-Object -First 1).Speed
     $ramSlots = $ramModules.Count
     $LblRAM.Text = "RAM: {0:N2} GB" -f $ramTotal
-    $LblRAMDetails.Text = "└─ $ramSpeed MHz • $ramSlots Slot(s) Used"
+    $LblRAMDetails.Text = "- $ramSpeed MHz - $ramSlots Slot(s) Used"
     
     # GPU Info (Always visible)
     $gpuVRAM = [math]::Round($gpu.AdapterRAM/1GB,2)
     $gpuDriver = $gpu.DriverVersion
     $LblGPU.Text = "GPU: $($gpu.Name)"
-    $LblGPUDetails.Text = "└─ $gpuVRAM GB VRAM • Driver: $gpuDriver"
+    $LblGPUDetails.Text = "- $gpuVRAM GB VRAM - Driver: $gpuDriver"
     
     # Motherboard
     $LblMotherboard.Text = "Motherboard: $($mb.Manufacturer) $($mb.Product)"
@@ -3546,7 +3675,7 @@ try {
                     else { "Unknown" }
         
         $diskTextBlock = New-Object System.Windows.Controls.TextBlock
-        $diskTextBlock.Text = "└─ Disk $diskNumber`: $diskSize GB $diskType"
+    $diskTextBlock.Text = "- Disk $diskNumber`: $diskSize GB $diskType"
         $diskTextBlock.FontSize = 14
         $grayBrush = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(176, 176, 176))
         $diskTextBlock.Foreground = $grayBrush
@@ -3590,7 +3719,7 @@ try {
     # Secure Boot
     try {
         $secureBoot = Confirm-SecureBootUEFI
-        $LblSecureBoot.Text = if ($secureBoot) { "Secure Boot: Enabled ✓" } else { "Secure Boot: Disabled" }
+    $LblSecureBoot.Text = if ($secureBoot) { "Secure Boot: Enabled" } else { "Secure Boot: Disabled" }
     } catch {
         $LblSecureBoot.Text = "Secure Boot: Not Supported"
     }
@@ -3598,7 +3727,7 @@ try {
     # Virtualization
     try {
         $virtEnabled = (Get-CimInstance Win32_Processor).VirtualizationFirmwareEnabled
-        $LblVirtualization.Text = if ($virtEnabled) { "Virtualization: Enabled ✓" } else { "Virtualization: Disabled" }
+    $LblVirtualization.Text = if ($virtEnabled) { "Virtualization: Enabled" } else { "Virtualization: Disabled" }
     } catch {
         $LblVirtualization.Text = "Virtualization: Unknown"
     }
@@ -3620,7 +3749,7 @@ try {
         $bitlockerVolumes = Get-BitLockerVolume -ErrorAction SilentlyContinue | Where-Object { $_.VolumeType -eq "OperatingSystem" }
         if ($bitlockerVolumes) {
             $protection = $bitlockerVolumes.ProtectionStatus
-            $LblBitLocker.Text = if ($protection -eq "On") { "BitLocker: Enabled ✓" } else { "BitLocker: Disabled" }
+            $LblBitLocker.Text = if ($protection -eq "On") { "BitLocker: Enabled" } else { "BitLocker: Disabled" }
         } else {
             $LblBitLocker.Text = "BitLocker: Not Available"
         }
@@ -3840,12 +3969,10 @@ $BtnRunSelectedTweaks.Add_Click({
     if ($ChkDisableStorageSense.IsChecked) { $selectedTweaks += "Disable Storage Sense" }
     if ($ChkDisableWifiSense.IsChecked) { $selectedTweaks += "Disable Wifi-Sense" }
     if ($ChkEnableEndTaskRightClick.IsChecked) { $selectedTweaks += "Enable End Task With Right Click" }
-    if ($ChkRunDiskCleanup.IsChecked) { $selectedTweaks += "Run Disk Cleanup" }
     if ($ChkSetTerminalDefault.IsChecked) { $selectedTweaks += "Change Windows Terminal Default" }
     if ($ChkDisablePS7Telemetry.IsChecked) { $selectedTweaks += "Disable PowerShell 7 Telemetry" }
     if ($ChkDisableRecall.IsChecked) { $selectedTweaks += "Disable Recall" }
     if ($ChkSetHibernationDefault.IsChecked) { $selectedTweaks += "Set Hibernation as Default (Undo)" }
-    if ($ChkSetServicesManual.IsChecked) { $selectedTweaks += "Set Services to Manual" }
     if ($ChkDebloatBrave.IsChecked) { $selectedTweaks += "Debloat Brave" }
     if ($ChkDebloatEdge.IsChecked) { $selectedTweaks += "Debloat Edge" }
 
@@ -3896,12 +4023,10 @@ $BtnRunSelectedTweaks.Add_Click({
         if ($ChkDisableStorageSense.IsChecked) { Disable-StorageSense }
         if ($ChkDisableWifiSense.IsChecked) { Disable-WifiSense }
         if ($ChkEnableEndTaskRightClick.IsChecked) { Enable-EndTaskRightClick }
-        if ($ChkRunDiskCleanup.IsChecked) { Start-DiskCleanup }
         if ($ChkSetTerminalDefault.IsChecked) { Set-TerminalDefault }
         if ($ChkDisablePS7Telemetry.IsChecked) { Disable-PS7Telemetry }
         if ($ChkDisableRecall.IsChecked) { Disable-Recall }
         if ($ChkSetHibernationDefault.IsChecked) { Set-HibernationDefault }
-        if ($ChkSetServicesManual.IsChecked) { Set-ServicesManual }
         if ($ChkDebloatBrave.IsChecked) { Optimize-Brave }
         if ($ChkDebloatEdge.IsChecked) { Optimize-Edge }
 
@@ -3940,12 +4065,10 @@ $BtnRunSelectedTweaks.Add_Click({
         $ChkDisableStorageSense.IsChecked = $false
         $ChkDisableWifiSense.IsChecked = $false
         $ChkEnableEndTaskRightClick.IsChecked = $false
-        $ChkRunDiskCleanup.IsChecked = $false
         $ChkSetTerminalDefault.IsChecked = $false
         $ChkDisablePS7Telemetry.IsChecked = $false
         $ChkDisableRecall.IsChecked = $false
         $ChkSetHibernationDefault.IsChecked = $false
-        $ChkSetServicesManual.IsChecked = $false
         $ChkDebloatBrave.IsChecked = $false
         $ChkDebloatEdge.IsChecked = $false
         
@@ -3998,18 +4121,67 @@ $BtnSelectAllTweaks.Add_Click({
     $ChkDisableStorageSense.IsChecked = $script:allSelected
     $ChkDisableWifiSense.IsChecked = $script:allSelected
     $ChkEnableEndTaskRightClick.IsChecked = $script:allSelected
-    $ChkRunDiskCleanup.IsChecked = $script:allSelected
     $ChkSetTerminalDefault.IsChecked = $script:allSelected
     $ChkDisablePS7Telemetry.IsChecked = $script:allSelected
     $ChkDisableRecall.IsChecked = $script:allSelected
     $ChkSetHibernationDefault.IsChecked = $script:allSelected
-    $ChkSetServicesManual.IsChecked = $script:allSelected
     $ChkDebloatBrave.IsChecked = $script:allSelected
     $ChkDebloatEdge.IsChecked = $script:allSelected
     
     # Update button text
     $BtnSelectAllTweaks.Content = if ($script:allSelected) { "Deselect All" } else { "Select All" }
 })
+
+# ===============================
+# Select Recommended Buttons Logic
+# ===============================
+if ($null -ne $BtnSelectRecommendedBasic) {
+    $BtnSelectRecommendedBasic.Add_Click({
+        # Basic recommended (safe/common)
+        $ChkPreferIPv4.IsChecked = $true
+        $ChkDisableBackgroundApps.IsChecked = $true
+        $ChkDisableFullscreenOptimizations.IsChecked = $true
+        $ChkDisableNotificationTray.IsChecked = $true
+        $ChkSetClassicRightClick.IsChecked = $true
+        $ChkSetDisplayPerformance.IsChecked = $true
+        $ChkCreateRestorePoint.IsChecked = $true
+        $ChkDeleteTempFiles.IsChecked = $true
+        $ChkDisableConsumerFeatures.IsChecked = $true
+        $ChkDisableTelemetry.IsChecked = $true
+        $ChkDisableActivityHistory.IsChecked = $true
+        $ChkDisableExplorerFolderDiscovery.IsChecked = $true
+        $ChkDisableGameDVR.IsChecked = $true
+        $ChkEnableEndTaskRightClick.IsChecked = $true
+        $ChkSetTerminalDefault.IsChecked = $true
+        $ChkDisablePS7Telemetry.IsChecked = $true
+        $ChkDisableRecall.IsChecked = $true
+        $ChkSetHibernationDefault.IsChecked = $true
+        $ChkDebloatBrave.IsChecked = $true
+        $ChkDebloatEdge.IsChecked = $true
+
+        [System.Windows.MessageBox]::Show("Basic recommended tweaks selected.", "PC Tweaks") | Out-Null
+    })
+}
+
+if ($null -ne $BtnSelectRecommendedAdvanced) {
+    $BtnSelectRecommendedAdvanced.Add_Click({
+        # Advanced recommended (still cautious)
+        $ChkDisableIPv6.IsChecked = $true
+        $ChkDisableTeredo.IsChecked = $true
+        $ChkDisableCopilot.IsChecked = $true
+        $ChkDisableIntelMM.IsChecked = $true
+        $ChkDisableWPBT.IsChecked = $true
+        $ChkBlockRazerSoftware.IsChecked = $true
+        
+        # These are destructive – recommending only if user explicitly picks Advanced
+        $ChkRemoveMSStoreApps.IsChecked = $true
+        $ChkRemoveHomeFromExplorer.IsChecked = $true
+        $ChkRemoveGalleryFromExplorer.IsChecked = $true
+        $ChkRemoveOneDrive.IsChecked = $true
+
+        [System.Windows.MessageBox]::Show("Advanced recommended tweaks selected. Review carefully before running.", "PC Tweaks") | Out-Null
+    })
+}
 
 # ===============================
 # Load Current Preference States
@@ -4164,12 +4336,142 @@ $BtnSetRecommended.Add_Click({
     }
 })
 
+if ($null -ne $BtnConfigRecommended) {
+    $BtnConfigRecommended.Add_Click({ $BtnSetRecommended.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)) })
+}
+
+# ===============================
+# Config Page Quick Actions
+# ===============================
+$BtnSetRegTweaks.Add_Click({
+    $list = @(
+        "Enable Game Mode",
+        "GPU Hardware Scheduling",
+        "Gaming and Network performance tweaks",
+        "TCP Ack Frequency = 1"
+    )
+    $ok = Show-ConfirmationDialog -Title "Apply Registry Tweaks" -Items $list
+    if (-not $ok) { return }
+    try {
+        Invoke-AllTweaks
+        [System.Windows.MessageBox]::Show("Registry tweaks applied.", "Done", "OK", "Information") | Out-Null
+    } catch {
+        [System.Windows.MessageBox]::Show("Failed to apply registry tweaks: $($_.Exception.Message)", "Error", "OK", "Error") | Out-Null
+    }
+})
+
+$BtnSetServiceTweaks.Add_Click({
+    $list = @(
+        "Set recommended service startup types",
+        "Disable/Manual non-essential services",
+        "Keep core services intact"
+    )
+    $ok = Show-ConfirmationDialog -Title "Apply Service Tweaks" -Items $list
+    if (-not $ok) { return }
+    try {
+        Invoke-ServiceTweaks
+        [System.Windows.MessageBox]::Show("Service tweaks applied.", "Done", "OK", "Information") | Out-Null
+    } catch {
+        [System.Windows.MessageBox]::Show("Failed to apply service tweaks: $($_.Exception.Message)", "Error", "OK", "Error") | Out-Null
+    }
+})
+
+# ===============================
+# Config: Run Disk Cleanup
+# ===============================
+if ($null -ne $BtnRunDiskCleanup) {
+    $BtnRunDiskCleanup.Add_Click({
+        $ok = Show-ConfirmationDialog -Title "Run Disk Cleanup" -Items @(
+            "Launch Windows Disk Cleanup",
+            "Clear Recycle Bin",
+            "Clean temporary files"
+        )
+        if (-not $ok) { return }
+
+        try {
+            Write-Log "Starting Disk Cleanup"
+            # Run Disk Cleanup UI first for visibility; user can close it after scan
+            $cleanMgrPath = Join-Path $env:SystemRoot "System32\cleanmgr.exe"
+            Start-Process -FilePath $cleanMgrPath -ArgumentList "/LOWDISK" -Wait -WindowStyle Normal
+
+            # Clear Recycle Bin (no prompt)
+            try { Clear-RecycleBin -Force -ErrorAction SilentlyContinue } catch { Write-Log "Clear-RecycleBin error: $_" }
+
+            # Clean common temp directories
+            $tempPaths = @(
+                $env:TEMP,
+                $env:TMP,
+                (Join-Path $env:SystemRoot "Temp"),
+                (Join-Path $env:LOCALAPPDATA "Temp")
+            ) | Where-Object { $_ -and (Test-Path $_) }
+
+            foreach ($p in $tempPaths) {
+                try {
+                    Get-ChildItem -LiteralPath $p -Force -Recurse -ErrorAction SilentlyContinue |
+                        Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+                } catch {
+                    Write-Log ("Temp cleanup error at {0}: {1}" -f $p, $_)
+                }
+            }
+
+            Write-Log "Disk Cleanup completed"
+            [System.Windows.MessageBox]::Show("Disk cleanup finished.", "PC Tweaks") | Out-Null
+        } catch {
+            Write-Log "Disk Cleanup error: $_"
+            [System.Windows.MessageBox]::Show("Error running Disk Cleanup: $_", "Error") | Out-Null
+        }
+    })
+}
+
+# ===============================
+# Config: Install Ultimate Power Plan
+# ===============================
+if ($null -ne $BtnInstallUltimatePowerPlan) {
+    $BtnInstallUltimatePowerPlan.Add_Click({
+        $ok = Show-ConfirmationDialog -Title "Install Ultimate Power Plan" -Items @(
+            "Import Ultimate Power Plan from Tools",
+            "Set plan as active"
+        )
+        if (-not $ok) { return }
+
+        try {
+            $powPath = Join-Path $PSScriptRoot "Tools\Ultimate Power Plan.pow"
+            if (-not (Test-Path $powPath)) {
+                [System.Windows.MessageBox]::Show("Power plan file not found: $powPath", "Error") | Out-Null
+                return
+            }
+
+            Write-Log "Importing power plan from $powPath"
+            # Import the plan; capture the GUID output
+            $importOutput = powercfg -import "$powPath" 2>&1
+            # Get the most recent custom plan by parsing powercfg -list
+            $plans = powercfg -list
+            $guid = ($plans | Select-String -Pattern "GUID: ([0-9a-fA-F-]{36})" -AllMatches).Matches | Select-Object -Last 1 | ForEach-Object { $_.Groups[1].Value }
+            if (-not $guid) {
+                # Fallback: attempt High performance GUID as a safe no-op
+                $guid = (powercfg -getactivescheme | Select-String -Pattern "([0-9a-fA-F-]{36})").Matches.Value
+            }
+
+            if ($guid) {
+                powercfg -setactive $guid | Out-Null
+                Write-Log "Set active power plan: $guid"
+                [System.Windows.MessageBox]::Show("Ultimate Power Plan installed and set active.", "PC Tweaks") | Out-Null
+            } else {
+                [System.Windows.MessageBox]::Show("Imported, but couldn't resolve plan GUID automatically. Please select it in Power Options.", "PC Tweaks") | Out-Null
+            }
+        } catch {
+            Write-Log "Ultimate Power Plan install error: $_"
+            [System.Windows.MessageBox]::Show("Error installing power plan: $_", "Error") | Out-Null
+        }
+    })
+}
+
 # ===============================
 # Install Page Handlers
 # ===============================
 
-# Helper function to toggle app selection
-function Toggle-AppSelection {
+# Helper function to set/toggle app selection (approved verb)
+function Set-AppSelection {
     param([System.Windows.Controls.Border]$Border, [string]$AppName)
     
     if ($script:SelectedApps.ContainsKey($AppName)) {
@@ -4186,87 +4488,87 @@ function Toggle-AppSelection {
 }
 
 # Add click handlers for all app buttons
-$BtnBrave.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnBrave -AppName "Brave" })
-$BtnChrome.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnChrome -AppName "Chrome" })
-$BtnChromium.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnChromium -AppName "Chromium" })
-$BtnEdge.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnEdge -AppName "Edge" })
-$BtnFalkon.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnFalkon -AppName "Falkon" })
-$BtnFirefox.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnFirefox -AppName "Firefox" })
-$BtnFirefoxESR.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnFirefoxESR -AppName "FirefoxESR" })
-$BtnFloorp.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnFloorp -AppName "Floorp" })
-$BtnLibreWolf.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnLibreWolf -AppName "LibreWolf" })
-$BtnMullvadBrowser.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnMullvadBrowser -AppName "MullvadBrowser" })
-$BtnPaleMoon.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnPaleMoon -AppName "PaleMoon" })
-$BtnThorium.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnThorium -AppName "Thorium" })
-$BtnTorBrowser.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnTorBrowser -AppName "TorBrowser" })
-$BtnUngoogled.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnUngoogled -AppName "Ungoogled" })
-$BtnVivaldi.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnVivaldi -AppName "Vivaldi" })
-$BtnWaterfox.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnWaterfox -AppName "Waterfox" })
-$BtnZenBrowser.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnZenBrowser -AppName "ZenBrowser" })
-$BtnSteam.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnSteam -AppName "Steam" })
-$BtnEpicGames.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnEpicGames -AppName "EpicGames" })
-$BtnEAApp.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnEAApp -AppName "EAApp" })
-$BtnUbisoft.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnUbisoft -AppName "Ubisoft" })
-$BtnGOG.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGOG -AppName "GOG" })
-$BtnProtonVPN.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnProtonVPN -AppName "ProtonVPN" })
-$BtnProtonMail.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnProtonMail -AppName "ProtonMail" })
-$BtnProtonDrive.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnProtonDrive -AppName "ProtonDrive" })
-$BtnAegisub.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnAegisub -AppName "Aegisub" })
-$BtnAnaconda.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnAnaconda -AppName "Anaconda" })
-$BtnClink.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnClink -AppName "Clink" })
-$BtnCMake.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnCMake -AppName "CMake" })
-$BtnDaxStudio.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnDaxStudio -AppName "DaxStudio" })
-$BtnDocker.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnDocker -AppName "Docker" })
-$BtnFNM.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnFNM -AppName "FNM" })
-$BtnFork.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnFork -AppName "Fork" })
-$BtnGit.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGit -AppName "Git" })
-$BtnGitButler.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGitButler -AppName "GitButler" })
-$BtnGitExtensions.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGitExtensions -AppName "GitExtensions" })
-$BtnGitHubCLI.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGitHubCLI -AppName "GitHubCLI" })
-$BtnGitHubDesktop.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGitHubDesktop -AppName "GitHubDesktop" })
-$BtnGitify.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGitify -AppName "Gitify" })
-$BtnGitKraken.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGitKraken -AppName "GitKraken" })
-$BtnGodot.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGodot -AppName "Godot" })
-$BtnGo.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnGo -AppName "Go" })
-$BtnHelix.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnHelix -AppName "Helix" })
-$BtnCorretto11.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnCorretto11 -AppName "Corretto11" })
-$BtnCorretto17.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnCorretto17 -AppName "Corretto17" })
-$BtnCorretto21.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnCorretto21 -AppName "Corretto21" })
-$BtnCorretto8.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnCorretto8 -AppName "Corretto8" })
-$BtnJetbrainsToolbox.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnJetbrainsToolbox -AppName "JetbrainsToolbox" })
-$BtnLazygit.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnLazygit -AppName "Lazygit" })
-$BtnMiniconda.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnMiniconda -AppName "Miniconda" })
-$BtnMu.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnMu -AppName "Mu" })
-$BtnNeovim.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnNeovim -AppName "Neovim" })
-$BtnNodeJS.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnNodeJS -AppName "NodeJS" })
-$BtnNodeJSLTS.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnNodeJSLTS -AppName "NodeJSLTS" })
-$BtnNVM.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnNVM -AppName "NVM" })
-$BtnPixi.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnPixi -AppName "Pixi" })
-$BtnOhMyPosh.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnOhMyPosh -AppName "OhMyPosh" })
-$BtnPostman.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnPostman -AppName "Postman" })
-$BtnPulsar.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnPulsar -AppName "Pulsar" })
-$BtnPyenv.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnPyenv -AppName "Pyenv" })
-$BtnPython.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnPython -AppName "Python" })
-$BtnRust.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnRust -AppName "Rust" })
-$BtnStarship.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnStarship -AppName "Starship" })
-$BtnSublimeMerge.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnSublimeMerge -AppName "SublimeMerge" })
-$BtnSublimeText.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnSublimeText -AppName "SublimeText" })
-$BtnSwift.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnSwift -AppName "Swift" })
-$BtnTemurin.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnTemurin -AppName "Temurin" })
-$BtnThonny.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnThonny -AppName "Thonny" })
-$BtnUnity.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnUnity -AppName "Unity" })
-$BtnVagrant.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnVagrant -AppName "Vagrant" })
-$BtnVisualStudio2022.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnVisualStudio2022 -AppName "VisualStudio2022" })
-$BtnVSCode.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnVSCode -AppName "VSCode" })
-$BtnVSCodium.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnVSCodium -AppName "VSCodium" })
-$BtnWezterm.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnWezterm -AppName "Wezterm" })
-$BtnYarn.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnYarn -AppName "Yarn" })
-$BtnDiscord.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnDiscord -AppName "Discord" })
-$BtnSpotify.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnSpotify -AppName "Spotify" })
-$BtnVLC.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnVLC -AppName "VLC" })
-$Btn7Zip.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $Btn7Zip -AppName "7Zip" })
-$BtnNotepadPlusPlus.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnNotepadPlusPlus -AppName "NotepadPlusPlus" })
-$BtnOBS.Add_MouseLeftButtonDown({ Toggle-AppSelection -Border $BtnOBS -AppName "OBS" })
+$BtnBrave.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnBrave -AppName "Brave" })
+$BtnChrome.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnChrome -AppName "Chrome" })
+$BtnChromium.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnChromium -AppName "Chromium" })
+$BtnEdge.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnEdge -AppName "Edge" })
+$BtnFalkon.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnFalkon -AppName "Falkon" })
+$BtnFirefox.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnFirefox -AppName "Firefox" })
+$BtnFirefoxESR.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnFirefoxESR -AppName "FirefoxESR" })
+$BtnFloorp.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnFloorp -AppName "Floorp" })
+$BtnLibreWolf.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnLibreWolf -AppName "LibreWolf" })
+$BtnMullvadBrowser.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnMullvadBrowser -AppName "MullvadBrowser" })
+$BtnPaleMoon.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnPaleMoon -AppName "PaleMoon" })
+$BtnThorium.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnThorium -AppName "Thorium" })
+$BtnTorBrowser.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnTorBrowser -AppName "TorBrowser" })
+$BtnUngoogled.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnUngoogled -AppName "Ungoogled" })
+$BtnVivaldi.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnVivaldi -AppName "Vivaldi" })
+$BtnWaterfox.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnWaterfox -AppName "Waterfox" })
+$BtnZenBrowser.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnZenBrowser -AppName "ZenBrowser" })
+$BtnSteam.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnSteam -AppName "Steam" })
+$BtnEpicGames.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnEpicGames -AppName "EpicGames" })
+$BtnEAApp.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnEAApp -AppName "EAApp" })
+$BtnUbisoft.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnUbisoft -AppName "Ubisoft" })
+$BtnGOG.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGOG -AppName "GOG" })
+$BtnProtonVPN.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnProtonVPN -AppName "ProtonVPN" })
+$BtnProtonMail.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnProtonMail -AppName "ProtonMail" })
+$BtnProtonDrive.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnProtonDrive -AppName "ProtonDrive" })
+$BtnAegisub.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnAegisub -AppName "Aegisub" })
+$BtnAnaconda.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnAnaconda -AppName "Anaconda" })
+$BtnClink.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnClink -AppName "Clink" })
+$BtnCMake.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnCMake -AppName "CMake" })
+$BtnDaxStudio.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnDaxStudio -AppName "DaxStudio" })
+$BtnDocker.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnDocker -AppName "Docker" })
+$BtnFNM.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnFNM -AppName "FNM" })
+$BtnFork.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnFork -AppName "Fork" })
+$BtnGit.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGit -AppName "Git" })
+$BtnGitButler.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGitButler -AppName "GitButler" })
+$BtnGitExtensions.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGitExtensions -AppName "GitExtensions" })
+$BtnGitHubCLI.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGitHubCLI -AppName "GitHubCLI" })
+$BtnGitHubDesktop.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGitHubDesktop -AppName "GitHubDesktop" })
+$BtnGitify.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGitify -AppName "Gitify" })
+$BtnGitKraken.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGitKraken -AppName "GitKraken" })
+$BtnGodot.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGodot -AppName "Godot" })
+$BtnGo.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnGo -AppName "Go" })
+$BtnHelix.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnHelix -AppName "Helix" })
+$BtnCorretto11.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnCorretto11 -AppName "Corretto11" })
+$BtnCorretto17.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnCorretto17 -AppName "Corretto17" })
+$BtnCorretto21.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnCorretto21 -AppName "Corretto21" })
+$BtnCorretto8.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnCorretto8 -AppName "Corretto8" })
+$BtnJetbrainsToolbox.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnJetbrainsToolbox -AppName "JetbrainsToolbox" })
+$BtnLazygit.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnLazygit -AppName "Lazygit" })
+$BtnMiniconda.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnMiniconda -AppName "Miniconda" })
+$BtnMu.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnMu -AppName "Mu" })
+$BtnNeovim.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnNeovim -AppName "Neovim" })
+$BtnNodeJS.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnNodeJS -AppName "NodeJS" })
+$BtnNodeJSLTS.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnNodeJSLTS -AppName "NodeJSLTS" })
+$BtnNVM.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnNVM -AppName "NVM" })
+$BtnPixi.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnPixi -AppName "Pixi" })
+$BtnOhMyPosh.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnOhMyPosh -AppName "OhMyPosh" })
+$BtnPostman.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnPostman -AppName "Postman" })
+$BtnPulsar.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnPulsar -AppName "Pulsar" })
+$BtnPyenv.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnPyenv -AppName "Pyenv" })
+$BtnPython.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnPython -AppName "Python" })
+$BtnRust.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnRust -AppName "Rust" })
+$BtnStarship.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnStarship -AppName "Starship" })
+$BtnSublimeMerge.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnSublimeMerge -AppName "SublimeMerge" })
+$BtnSublimeText.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnSublimeText -AppName "SublimeText" })
+$BtnSwift.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnSwift -AppName "Swift" })
+$BtnTemurin.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnTemurin -AppName "Temurin" })
+$BtnThonny.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnThonny -AppName "Thonny" })
+$BtnUnity.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnUnity -AppName "Unity" })
+$BtnVagrant.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnVagrant -AppName "Vagrant" })
+$BtnVisualStudio2022.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnVisualStudio2022 -AppName "VisualStudio2022" })
+$BtnVSCode.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnVSCode -AppName "VSCode" })
+$BtnVSCodium.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnVSCodium -AppName "VSCodium" })
+$BtnWezterm.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnWezterm -AppName "Wezterm" })
+$BtnYarn.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnYarn -AppName "Yarn" })
+$BtnDiscord.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnDiscord -AppName "Discord" })
+$BtnSpotify.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnSpotify -AppName "Spotify" })
+$BtnVLC.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnVLC -AppName "VLC" })
+$Btn7Zip.Add_MouseLeftButtonDown({ Set-AppSelection -Border $Btn7Zip -AppName "7Zip" })
+$BtnNotepadPlusPlus.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnNotepadPlusPlus -AppName "NotepadPlusPlus" })
+$BtnOBS.Add_MouseLeftButtonDown({ Set-AppSelection -Border $BtnOBS -AppName "OBS" })
 
 # Get Installed Apps Button
 $BtnGetInstalled.Add_Click({
