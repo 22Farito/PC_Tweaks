@@ -55,60 +55,6 @@ function Install-Mysterium { Install-App -AppId "Mysterium.Network" -AppName "My
 
 
 # ===============================================================================================================================
-#                                                           LAUNCH PROGRAMS
-# ===============================================================================================================================
-# Function to launch Revo Uninstaller
-# =====================================
-function Launch_RevoSilent {
-    # Use PSScriptRoot to get the script's folder reliably
-    $scriptDir = $PSScriptRoot
-
-    # Build the path to the exe (two folders up, then Tools\RevoUninstaller\RevoUPort.exe)
-    $exePath = Join-Path $scriptDir "..\..\Tools\RevoUninstaller\RevoUPort.exe"
-    $exeFullPath = Resolve-Path $exePath -ErrorAction SilentlyContinue
-
-    if (-not $exeFullPath) {
-        Write-Host "Error: Revo Uninstaller not found at $exePath"
-        return
-    }
-
-    try {
-        # Launch the executable silently
-        Start-Process -FilePath $exeFullPath -ArgumentList "/S" -WindowStyle Hidden -Wait
-        Write-Host "Launched Revo Uninstaller silently!"
-    } catch {
-        Write-Host "Failed to launch Revo Uninstaller: $_"
-    }
-}
-
-# ==============================================
-# Function to launch Revo Reg Cleaner portable
-# ==============================================
-function Launch_RevoRegPortable {
-    # Use PSScriptRoot to get the script's folder reliably
-    $scriptDir = $PSScriptRoot
-
-    # Build the path to the exe (two folders up, then Tools\RevoRegCleaner.exe)
-    $exePath = Join-Path $scriptDir "..\..\Tools\Revo Registry Cleaner\Revo Registry Cleaner.exe"
-    $exeFullPath = Resolve-Path $exePath -ErrorAction SilentlyContinue
-
-    if (-not $exeFullPath) {
-        Write-Host "Error: Portable Revo Reg Cleaner not found at $exePath"
-        return
-    }
-
-    try {
-        # Launch the portable executable
-        Start-Process -FilePath $exeFullPath -WindowStyle Hidden -Wait
-        Write-Host "Launched Revo Reg Cleaner Portable successfully!"
-    } catch {
-        Write-Host "Failed to launch Revo Reg Cleaner: $_"
-    }
-}
-
-
-
-# ===============================================================================================================================
 #                                                           ADVANCED TWEAKS
 # ===============================================================================================================================
 # Custom themed confirmation dialog
@@ -1406,7 +1352,7 @@ function Get-RegistryBaseKey {
     }
 }
 
-function Ensure-RegistryKey {
+function New-RegistryKey {
     param(
         [Parameter(Mandatory)][string]$Root,
         [Parameter(Mandatory)][string]$Path
@@ -1580,13 +1526,33 @@ function Invoke-ServiceTweak {
     Write-Log "Tweaking: ${ServiceName} -> ${StartupType}"
 
     try {
-        $null = sc.exe config $ServiceName "start=$StartupType" 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "[OK] ${ServiceName}: set startup to '${StartupType}'" -ForegroundColor Green
-            Write-Log "[OK] ${ServiceName}: set startup to '${StartupType}'"
+        # Resolve actual target service names. Some services are per-user (e.g., CDPUserSvc_12345)
+        $perUserBases = @('CDPUserSvc','UnistoreSvc','OneSyncSvc','PimIndexMaintenanceSvc','MessagingService')
+        $targets = @()
+        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if ($null -ne $svc) {
+            $targets = @($svc.Name)
+        } elseif ($perUserBases -contains $ServiceName) {
+            $targets = (Get-Service -Name ("{0}*" -f $ServiceName) -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
         } else {
-            Write-Host "[ERROR] ${ServiceName}: failed (exit code: $LASTEXITCODE)" -ForegroundColor Red
-            Write-Log "[ERROR] ${ServiceName}: failed (exit code: $LASTEXITCODE)"
+            $targets = @($ServiceName)
+        }
+
+        if (-not $targets -or $targets.Count -eq 0) {
+            # Service not found on this system – log as skip
+            Write-Host "[SKIP] ${ServiceName}: service not found on this system" -ForegroundColor Yellow
+            Write-Log "[SKIP] ${ServiceName}: service not found on this system"
+            return
+        }
+
+        foreach ($t in $targets) {
+            $null = sc.exe config $t "start=$StartupType" 2>&1
+            switch ($LASTEXITCODE) {
+                0     { Write-Host "[OK] $($t): set startup to '$StartupType'" -ForegroundColor Green; Write-Log "[OK] $($t): set startup to '$StartupType'" }
+                5     { Write-Host "[SKIP] $($t): Access denied (run as Administrator)" -ForegroundColor Yellow; Write-Log "[SKIP] $($t): Access denied (run as Administrator)" }
+                1060  { Write-Host "[SKIP] $($t): service does not exist (Windows edition/feature dependent)" -ForegroundColor Yellow; Write-Log "[SKIP] $($t): service does not exist (Windows edition/feature dependent)" }
+                Default { Write-Host "[ERROR] $($t): failed (exit code: $LASTEXITCODE)" -ForegroundColor Red; Write-Log "[ERROR] $($t): failed (exit code: $LASTEXITCODE)" }
+            }
         }
     }
     catch {
@@ -1604,6 +1570,31 @@ $ServiceTweaks = @(
     @{ Name = "DiagTrack"; Startup = "disabled" }
     @{ Name = "DialogBlockingService"; Startup = "disabled" }
     @{ Name = "dmwappushservice"; Startup = "disabled" }
+# Elevation check (before activation prompt): prompt to relaunch as Administrator
+function Test-IsAdministrator {
+    try {
+        $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+        $p = New-Object Security.Principal.WindowsPrincipal($id)
+        return $p.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+    } catch { return $false }
+}
+
+if (-not (Test-IsAdministrator)) {
+    $msg = "Administrator privileges are recommended to apply system and service tweaks.\n\nRelaunch now with elevated rights?"
+    $choice = [System.Windows.MessageBox]::Show($msg, "PC Tweaks", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+    if ($choice -eq [System.Windows.MessageBoxResult]::Yes) {
+        try {
+            $exePath = (Get-Process -Id $PID).Path
+            $scriptPath = $PSCommandPath
+            $args = @('-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$scriptPath`"")
+            Start-Process -FilePath $exePath -ArgumentList $args -Verb RunAs -WorkingDirectory (Split-Path -Parent $scriptPath) | Out-Null
+            exit
+        } catch {
+            [System.Windows.MessageBox]::Show("Elevation failed: $($_.Exception.Message)", "PC Tweaks", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error) | Out-Null
+        }
+    }
+}
+
     @{ Name = "RemoteAccess"; Startup = "disabled" }
     @{ Name = "RemoteRegistry"; Startup = "disabled" }
     @{ Name = "shpamsvc"; Startup = "disabled" }
@@ -3269,8 +3260,7 @@ $xaml = @"
                             </ScrollViewer>
                         </Border>
 
-                        <Button Grid.Row="2" Name="BtnDownloadLogs" Content="Download Logs to Desktop"
-                                Style="{StaticResource RoundedButton}" Margin="0,20,0,0" Height="44"/>
+            <!-- Download Logs button removed -->
                     </Grid>
                 </Grid>
             </Border>
@@ -3400,7 +3390,7 @@ $BtnSetServiceTweaks  = $window.FindName("BtnSetServiceTweaks")
 $BtnRunDiskCleanup    = $window.FindName("BtnRunDiskCleanup")
 $BtnInstallUltimatePowerPlan = $window.FindName("BtnInstallUltimatePowerPlan")
 $TxtLogs              = $window.FindName("TxtLogs")
-$BtnDownloadLogs      = $window.FindName("BtnDownloadLogs")
+# (Removed) Download Logs button was deleted from XAML; no lookup needed
 $BtnRunSelectedTweaks           = $window.FindName("BtnRunSelectedTweaks")
 $BtnSelectAllTweaks             = $window.FindName("BtnSelectAllTweaks")
 $BtnSelectRecommendedBasic      = $window.FindName("BtnSelectRecommendedBasic")
@@ -3620,7 +3610,7 @@ function Get-ParentObject {
     }
 }
 
-function Is-WithinInteractiveControl {
+function Test-WithinInteractiveControl {
     param([System.Windows.DependencyObject]$start)
     $current = $start
     while ($null -ne $current) {
@@ -3643,7 +3633,7 @@ if ($null -ne $DragArea) {
         try {
             $depObj = $e.OriginalSource -as [System.Windows.DependencyObject]
             if ($null -ne $depObj) {
-                if (Is-WithinInteractiveControl -start $depObj) { return }
+                if (Test-WithinInteractiveControl -start $depObj) { return }
             }
             # Perform drag
             $window.DragMove()
@@ -3732,25 +3722,7 @@ $BtnLogs.Add_Click({
     $TxtLogs.Document.Blocks.Add($paragraph)
 })
 
-$BtnDownloadLogs.Add_Click({
-    try {
-        if (-not $global:LogEntries) { $global:LogEntries = New-Object System.Collections.Generic.List[string] }
-        $dlg = New-Object Microsoft.Win32.SaveFileDialog
-        $dlg.Title = "Save Logs"
-        $dlg.FileName = "pctweaks_logs.txt"
-        $dlg.DefaultExt = ".txt"
-        $dlg.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*"
-        $result = $dlg.ShowDialog()
-        if ($result -eq $true -and $dlg.FileName) {
-            [System.IO.File]::WriteAllLines($dlg.FileName, $global:LogEntries)
-            Write-Log "Logs saved to: $($dlg.FileName)"
-            [System.Windows.MessageBox]::Show("Logs saved to:`n$($dlg.FileName)") | Out-Null
-        }
-    } catch {
-        Write-Host "Failed to save logs: $_" -ForegroundColor Yellow
-        [System.Windows.MessageBox]::Show("Failed to save logs: $($_.Exception.Message)") | Out-Null
-    }
-})
+# (Removed) Download Logs handler – feature removed
 
 # ===============================
 # Populate System Info
@@ -4062,6 +4034,7 @@ $BtnLogs.Add_Click({ Show-Page $PageLogs })
 # ===============================
 # Run Selected Tweaks Button Logic
 # ===============================
+if ($null -ne $BtnRunSelectedTweaks) {
 $BtnRunSelectedTweaks.Add_Click({
     # Collect all checked tweaks
     $selectedTweaks = @()
@@ -4209,11 +4182,13 @@ $BtnRunSelectedTweaks.Add_Click({
             [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
     }
 })
+} else { Write-Host "WARN: BtnRunSelectedTweaks control not found; handler not attached." -ForegroundColor Yellow }
 
 # ===============================
 # Select All / Deselect All Button Logic
 # ===============================
 $script:allSelected = $false
+if ($null -ne $BtnSelectAllTweaks) {
 $BtnSelectAllTweaks.Add_Click({
     $script:allSelected = -not $script:allSelected
     
@@ -4260,6 +4235,7 @@ $BtnSelectAllTweaks.Add_Click({
     # Update button text
     $BtnSelectAllTweaks.Content = if ($script:allSelected) { "Deselect All" } else { "Select All" }
 })
+} else { Write-Host "WARN: BtnSelectAllTweaks control not found; handler not attached." -ForegroundColor Yellow }
 
 # ===============================
 # Select Recommended Buttons Logic
@@ -4571,8 +4547,8 @@ if ($null -ne $BtnInstallUltimatePowerPlan) {
             }
 
             Write-Log "Importing power plan from $powPath"
-            # Import the plan; capture the GUID output
-            $importOutput = powercfg -import "$powPath" 2>&1
+            # Import the plan; silence command output
+            powercfg -import "$powPath" | Out-Null 2>$null
             # Get the most recent custom plan by parsing powercfg -list
             $plans = powercfg -list
             $guid = ($plans | Select-String -Pattern "GUID: ([0-9a-fA-F-]{36})" -AllMatches).Matches | Select-Object -Last 1 | ForEach-Object { $_.Groups[1].Value }
