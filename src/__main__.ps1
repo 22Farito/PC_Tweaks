@@ -3609,25 +3609,45 @@ foreach ($grip in $resizeGrips) {
 # ===============================
 # Window dragging and controls
 # ===============================
-# Drag window by holding top bar (but not on buttons)
+function Get-ParentObject {
+    param([System.Windows.DependencyObject]$obj)
+    if ($null -eq $obj) { return $null }
+    # Prefer Visual tree when possible, otherwise fall back to Logical tree
+    if ($obj -is [System.Windows.Media.Visual] -or $obj -is [System.Windows.Media.Media3D.Visual3D]) {
+        return [System.Windows.Media.VisualTreeHelper]::GetParent($obj)
+    } else {
+        try { return [System.Windows.LogicalTreeHelper]::GetParent($obj) } catch { return $null }
+    }
+}
+
+function Is-WithinInteractiveControl {
+    param([System.Windows.DependencyObject]$start)
+    $current = $start
+    while ($null -ne $current) {
+        if ($current -is [System.Windows.Controls.Primitives.ButtonBase] -or
+            $current -is [System.Windows.Controls.TextBox] -or
+            $current -is [System.Windows.Controls.Primitives.ToggleButton] -or
+            $current -is [System.Windows.Controls.ComboBox] -or
+            $current -is [System.Windows.Controls.ListBoxItem]) {
+            return $true
+        }
+        $current = Get-ParentObject -obj $current
+    }
+    return $false
+}
+
+# Drag window by holding top bar (but not on buttons or other interactive controls)
 if ($null -ne $DragArea) {
     $DragArea.Add_PreviewMouseLeftButtonDown({
         param($s, $e)
-        # Only drag if not clicking on a button
-        $source = $e.OriginalSource
-        
-        # Check if clicking on button or button content
-        $element = $source
-    while ($null -ne $element) {
-            if ($element -is [System.Windows.Controls.Button]) {
-                return  # Don't drag if clicking a button
+        try {
+            $depObj = $e.OriginalSource -as [System.Windows.DependencyObject]
+            if ($null -ne $depObj) {
+                if (Is-WithinInteractiveControl -start $depObj) { return }
             }
-            $element = [System.Windows.Media.VisualTreeHelper]::GetParent($element)
-        }
-        
-        # Perform drag
-        try { 
-            $window.DragMove() 
+            # Perform drag
+            $window.DragMove()
+            $e.Handled = $true
         } catch {
             # DragMove can fail in certain scenarios, silently ignore
         }
