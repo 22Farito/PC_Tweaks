@@ -255,6 +255,130 @@ function Show-ConfirmationDialog {
     }
 }
 
+# ===============================
+# Windows Activation: Check + Prompt
+# ===============================
+function Test-WindowsActivated {
+    try {
+        $products = Get-CimInstance -ClassName SoftwareLicensingProduct -ErrorAction Stop |
+            Where-Object { $_.PartialProductKey -and $_.Name -like "Windows*" }
+        if (-not $products) { return $false }
+        return ($products | Where-Object { $_.LicenseStatus -eq 1 }).Count -gt 0
+    } catch {
+        Write-Log "Activation check failed: $_"
+        return $false
+    }
+}
+
+function Show-ActivationPrompt {
+    $dialogXaml = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Windows Activation"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Width="520" Height="230"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize">
+    <Window.Resources>
+        <Color x:Key="DarkBackgroundColor">#1A1A1A</Color>
+        <Color x:Key="DarkCardColor">#2D2D2D</Color>
+        <Color x:Key="DarkBorderColor">#404040</Color>
+        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{StaticResource DarkBackgroundColor}"/>
+        <SolidColorBrush x:Key="CardBrush" Color="{StaticResource DarkCardColor}"/>
+        <SolidColorBrush x:Key="BorderBrushColor" Color="{StaticResource DarkBorderColor}"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#4F8EF7"/>
+
+        <Style x:Key="DialogButton" TargetType="Button">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="24,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="10"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#384B7C"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#262F52"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border CornerRadius="12" Background="{StaticResource CardBrush}"
+            BorderBrush="{StaticResource BorderBrushColor}" BorderThickness="2">
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+                <TextBlock Text="🔑" FontSize="28" Margin="0,0,10,0"/>
+                <TextBlock Text="Windows is not activated" FontSize="20" FontWeight="Bold" Foreground="White"/>
+            </StackPanel>
+
+            <TextBlock Grid.Row="1"
+                       Text="Would you like to run the Activator now? You can also close this window to skip."
+                       TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="14"/>
+
+            <Grid Grid.Row="2" Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Name="BtnInstall" Content="Open Activation Settings" Style="{StaticResource DialogButton}"/>
+                <Button Grid.Column="2" Name="BtnClose" Content="Close" Style="{StaticResource DialogButton}" BorderBrush="#666666"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
+"@
+
+    try {
+        $dlg = [Windows.Markup.XamlReader]::Parse($dialogXaml)
+        $btnInstall = $dlg.FindName('BtnInstall')
+        $btnClose = $dlg.FindName('BtnClose')
+
+        $btnInstall.Add_Click({
+            try {
+                Write-Log "User opened Activation settings"
+                # Open Windows Activation settings
+                Start-Process "ms-settings:activation" | Out-Null
+            } catch {
+                Write-Log "Failed to open Activation settings: $_"
+            } finally {
+                $dlg.Close()
+            }
+        })
+
+        $btnClose.Add_Click({ $dlg.Close() })
+
+        $dlg.ShowDialog() | Out-Null
+    } catch {
+        Write-Log "Activation prompt error: $_"
+    }
+}
+
 # Wrapper for invoking external commands with logging
 function Invoke-ExternalCommand {
     param([Parameter(Mandatory)][string]$Command)
@@ -1773,10 +1897,7 @@ function Uninstall-Applications {
     }
 }
 
-# ===============================
-# Define Paths
-# ===============================
-$noisePath = Join-Path $PSScriptRoot "noise.png"
+# (Removed) noise.png path definition
 
 # ===============================
 # XAML UI
@@ -1815,13 +1936,7 @@ $xaml = @"
         <SolidColorBrush x:Key="BorderBrushColor"      Color="{StaticResource DarkBorderColor}"/>
         <SolidColorBrush x:Key="TopBarBrush"           Color="{StaticResource DarkTopBarColor}"/>
 
-        <!-- Faint, tiled noise; image set at runtime -->
-        <ImageBrush x:Key="NoiseBrush"
-                    TileMode="Tile"
-                    Viewport="0,0,256,256"
-                    ViewportUnits="Absolute"
-                    Stretch="None"
-                    Opacity="0.07" />
+    <!-- NoiseBrush removed -->
 
         <!-- Accent -->
         <SolidColorBrush x:Key="AccentBrush" Color="#4F8EF7"/>
@@ -2048,18 +2163,8 @@ $xaml = @"
     </Window.Resources>
 
     <Grid>
-        <!-- Main container (borderless) with faint noise layered -->
-        <Border CornerRadius="15" Margin="5" BorderThickness="0" BorderBrush="{DynamicResource BorderBrushColor}" Name="MainBorder">
-            <Border.Background>
-                <VisualBrush>
-                    <VisualBrush.Visual>
-                        <Grid>
-                            <Border Background="{DynamicResource WindowBackgroundBrush}"/>
-                            <Border Background="{DynamicResource NoiseBrush}"/>
-                        </Grid>
-                    </VisualBrush.Visual>
-            </VisualBrush>
-        </Border.Background>
+        <!-- Main container (borderless) without noise texture -->
+        <Border CornerRadius="15" Margin="5" BorderThickness="0" BorderBrush="{DynamicResource BorderBrushColor}" Name="MainBorder" Background="{DynamicResource WindowBackgroundBrush}">
 
         <Grid>
             <Grid.RowDefinitions>
@@ -2686,21 +2791,42 @@ $xaml = @"
 
                     <!-- Tweaks -->
                     <Grid Name="PageTweaks" Visibility="Collapsed">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                        <!-- Left: Advanced Tweaks -->
-                        <Border Grid.Column="0" Margin="12,8,12,8" Background="{DynamicResource CardBrush}"
-                                CornerRadius="12" BorderThickness="2" BorderBrush="{DynamicResource BorderBrushColor}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                        <!-- Top-of-page toolbar: simple text buttons with faint outline -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left" Margin="12,8,12,4">
+                            <StackPanel.Resources>
+                                <Style TargetType="Button" BasedOn="{StaticResource RoundedButton}">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushColor}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Padding" Value="12,6"/>
+                                    <Setter Property="Margin" Value="0,0,8,0"/>
+                                    <Setter Property="HorizontalAlignment" Value="Left"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                </Style>
+                            </StackPanel.Resources>
 
-                                <ScrollViewer Grid.Row="0" Style="{StaticResource CustomScrollViewer}" VerticalScrollBarVisibility="Auto">
+                            <Button Name="BtnSelectRecommendedBasic" Content="Select Recommended (Basic)"/>
+                            <Button Name="BtnSelectRecommendedAdvanced" Content="Select Recommended (Advanced)"/>
+                            <Button Name="BtnRunSelectedTweaks" Content="Run Selected Tweaks"/>
+                            <Button Name="BtnSelectAllTweaks" Content="Select All"/>
+                        </StackPanel>
+
+                        <!-- Content area with two columns -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Left: Advanced Tweaks -->
+                            <Border Grid.Column="0" Margin="12,8,12,8" Background="{DynamicResource CardBrush}"
+                                    CornerRadius="12" BorderThickness="2" BorderBrush="{DynamicResource BorderBrushColor}">
+                                <ScrollViewer Style="{StaticResource CustomScrollViewer}" VerticalScrollBarVisibility="Auto">
                                     <StackPanel Margin="24">
                                         <!-- Normal Tweaks Section -->
                                         <TextBlock Text="Basic Tweaks" FontSize="18" FontWeight="Bold"
@@ -2750,34 +2876,10 @@ $xaml = @"
                                         <CheckBox Name="ChkDisableHibernation" Content="Disable Hibernation" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" FontSize="14"/>
                                     </StackPanel>
                                 </ScrollViewer>
+                            </Border>
 
-                                <StackPanel Grid.Row="1" Margin="24,10,24,24">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <!-- Top row: Select recommended buttons -->
-                                        <Button Grid.Row="0" Grid.Column="0" Name="BtnSelectRecommendedBasic" Content="Select Recommended (Basic)"
-                                                Style="{StaticResource RoundedButton}" Margin="0,0,8,8" Height="44"/>
-                                        <Button Grid.Row="0" Grid.Column="1" Name="BtnSelectRecommendedAdvanced" Content="Select Recommended (Advanced)"
-                                                Style="{StaticResource RoundedButton}" Margin="8,0,0,8" Height="44"/>
-                                        <!-- Bottom row: Run and select all/deselect all -->
-                                        <Button Grid.Row="1" Grid.Column="0" Name="BtnRunSelectedTweaks" Content="Run Selected Tweaks" 
-                                                Style="{StaticResource RoundedButton}" Margin="0,0,8,0" Height="44"/>
-                                        <Button Grid.Row="1" Grid.Column="1" Name="BtnSelectAllTweaks" Content="Select All" 
-                                                Style="{StaticResource RoundedButton}" Margin="8,0,0,0" Height="44"/>
-                                    </Grid>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-
-                        <!-- Right: Preferences -->
-                        <Border Grid.Column="1" Margin="12,8,12,8" Background="{DynamicResource CardBrush}"
+                            <!-- Right: Preferences -->
+                            <Border Grid.Column="1" Margin="12,8,12,8" Background="{DynamicResource CardBrush}"
                                 CornerRadius="12" BorderThickness="2" BorderBrush="{DynamicResource BorderBrushColor}">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -3028,6 +3130,7 @@ $xaml = @"
                                 </StackPanel>
                             </Grid>
                         </Border>
+                        </Grid>
                     </Grid>
 
                     <!-- Config -->
@@ -3156,11 +3259,8 @@ $xaml = @"
 
                         <Border Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="8"
                                 BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="2">
-                            <ScrollViewer>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <RichTextBox Name="TxtLogs"
-                                             Background="Transparent"
-                                             Foreground="{DynamicResource ForegroundBrush}"
-                                             BorderThickness="0"
                                              IsReadOnly="True"
                                              FontFamily="Consolas"
                                              FontSize="14"
@@ -3191,23 +3291,34 @@ $xaml = @"
 # ===============================
 # Load XAML (ONLY ONCE)
 # ===============================
-Add-Type -AssemblyName PresentationFramework
-$reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
-$window = [Windows.Markup.XamlReader]::Load($reader)
-
-# Load noise.png
 try {
-    if (Test-Path $noisePath) {
-        $img = New-Object System.Windows.Media.Imaging.BitmapImage
-        $img.BeginInit()
-        $img.UriSource = (New-Object System.Uri $noisePath)
-        $img.CacheOption = "OnLoad"
-        $img.EndInit()
-        $window.Resources["NoiseBrush"].ImageSource = $img
-    }
+    Add-Type -AssemblyName PresentationFramework
+    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
+    $window = [Windows.Markup.XamlReader]::Load($reader)
 } catch {
-    Write-Host "Failed to load noise.png"
+    Write-Host "XAML parse/load error: $($_.Exception.Message)" -ForegroundColor Red
+    if ($_.Exception.InnerException) {
+        Write-Host "Inner: $($_.Exception.InnerException.Message)" -ForegroundColor Red
+    }
+    throw
 }
+
+# Show activation prompt once the UI is ready
+$window.Add_ContentRendered({
+    try {
+        # Only show once
+        if (-not $script:_activationPromptShown) {
+            $script:_activationPromptShown = $true
+            if (-not (Test-WindowsActivated)) {
+                Show-ActivationPrompt
+            }
+        }
+    } catch {
+        Write-Log "Startup activation check failed: $_"
+    }
+})
+
+# (noise.png usage removed)
 
 
 # ===============================
@@ -3551,12 +3662,23 @@ $BtnMaximize.Add_Click({
 })
 
 # ===============================
-# Logging Function
+# In-memory Logging (no file until user saves)
 # ===============================
+if (-not $global:LogEntries) { $global:LogEntries = New-Object System.Collections.Generic.List[string] }
+
 function Write-Log($message) {
-    $logFilePath = Join-Path $PSScriptRoot "logs.txt"
-    $timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    Add-Content -Path $logFilePath -Value "[$timestamp] $message"
+    try {
+        $timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+        $line = "[$timestamp] $message"
+        $global:LogEntries.Add($line)
+        # Cap size to avoid unbounded memory (keep last 5000 lines)
+        if ($global:LogEntries.Count -gt 5000) {
+            $removeCount = $global:LogEntries.Count - 5000
+            $null = $global:LogEntries.RemoveRange(0, $removeCount)
+        }
+    } catch {
+        # Never crash on logging
+    }
 }
 
 # ===============================
@@ -3564,62 +3686,49 @@ function Write-Log($message) {
 # ===============================
 $BtnLogs.Add_Click({
     Show-Page $PageLogs
-    $logFilePath = Join-Path $PSScriptRoot "logs.txt"
-    if (Test-Path $logFilePath) {
-        # Clear existing content
-        $TxtLogs.Document.Blocks.Clear()
-        
-        # Read log file
-        $logContent = Get-Content $logFilePath
-        
-        # Create a paragraph for the logs
-        $paragraph = New-Object System.Windows.Documents.Paragraph
-        
-        foreach ($line in $logContent) {
-            # Create a run for each line
+    $TxtLogs.Document.Blocks.Clear()
+    $paragraph = New-Object System.Windows.Documents.Paragraph
+    $lines = $global:LogEntries
+    if ($null -ne $lines -and $lines.Count -gt 0) {
+        foreach ($line in $lines) {
             $run = New-Object System.Windows.Documents.Run
             $run.Text = $line + "`n"
-            
-            # Color based on keywords
             if ($line -match '\b(SUCCESS|SUCCESSFULLY|SUCCESSFUL|ENABLED|COMPLETED|OK|DISABLED|DISSABLED)\b') {
                 $run.Foreground = [System.Windows.Media.Brushes]::LimeGreen
-            }
-            elseif ($line -match '\b(ERROR|FAILED|FAILURE|EXCEPTION|CRITICAL)\b') {
+            } elseif ($line -match '\b(ERROR|FAILED|FAILURE|EXCEPTION|CRITICAL)\b') {
                 $run.Foreground = [System.Windows.Media.Brushes]::Red
-            }
-            elseif ($line -match '\b(WARNING|WARN)\b') {
+            } elseif ($line -match '\b(WARNING|WARN)\b') {
                 $run.Foreground = [System.Windows.Media.Brushes]::Orange
-            }
-            else {
-                # Default color based on theme
+            } else {
                 $run.Foreground = $window.Resources["ForegroundBrush"]
             }
-            
             $paragraph.Inlines.Add($run)
         }
-        
-        $TxtLogs.Document.Blocks.Add($paragraph)
     } else {
-        $TxtLogs.Document.Blocks.Clear()
-        $paragraph = New-Object System.Windows.Documents.Paragraph
         $run = New-Object System.Windows.Documents.Run
-        $run.Text = "No log file found."
+        $run.Text = "No logs yet."
         $paragraph.Inlines.Add($run)
-        $TxtLogs.Document.Blocks.Add($paragraph)
     }
+    $TxtLogs.Document.Blocks.Add($paragraph)
 })
 
 $BtnDownloadLogs.Add_Click({
-    $logFilePath = Join-Path $PSScriptRoot "logs.txt"
-    if (Test-Path $logFilePath) {
-        $desktop = [Environment]::GetFolderPath("Desktop")
-        $destPath = Join-Path $desktop "pctool-logs.txt"
-        Copy-Item $logFilePath $destPath -Force
-        Write-Host "Logs downloaded to Desktop: $destPath" -ForegroundColor Green
-        [System.Windows.MessageBox]::Show("Logs downloaded to your Desktop as 'pctool-logs.txt'")
-    } else {
-        Write-Host "No log file found for download." -ForegroundColor Yellow
-        [System.Windows.MessageBox]::Show("No log file found to download.")
+    try {
+        if (-not $global:LogEntries) { $global:LogEntries = New-Object System.Collections.Generic.List[string] }
+        $dlg = New-Object Microsoft.Win32.SaveFileDialog
+        $dlg.Title = "Save Logs"
+        $dlg.FileName = "pctweaks_logs.txt"
+        $dlg.DefaultExt = ".txt"
+        $dlg.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*"
+        $result = $dlg.ShowDialog()
+        if ($result -eq $true -and $dlg.FileName) {
+            [System.IO.File]::WriteAllLines($dlg.FileName, $global:LogEntries)
+            Write-Log "Logs saved to: $($dlg.FileName)"
+            [System.Windows.MessageBox]::Show("Logs saved to:`n$($dlg.FileName)") | Out-Null
+        }
+    } catch {
+        Write-Host "Failed to save logs: $_" -ForegroundColor Yellow
+        [System.Windows.MessageBox]::Show("Failed to save logs: $($_.Exception.Message)") | Out-Null
     }
 })
 
