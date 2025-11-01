@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run PC_Tweaks script",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"& 'd:\\Coding - Projects\\PC_Tweaks\\src\\__main__.ps1'"
+			],
+			"problemMatcher": [
+				"$powershell"
+			],
+			"group": "build"
+		}
+	]
+}
