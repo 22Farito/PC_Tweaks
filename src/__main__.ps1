@@ -1215,10 +1215,21 @@ function Set-DesktopIconsVisible {
     try {
         # HideIcons: 0 = show icons, 1 = hide icons
         $value = if ($Enable) { 0 } else { 1 }
-        Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideIcons" -Value $value
+        $ok = Set-RegistryValue -Root "HKEY_CURRENT_USER" -Path "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideIcons" -Value $value
+        if (-not $ok) { throw "Failed to write HideIcons" }
+
+        # Notify Explorer of setting change; this often applies without a full restart
+        Invoke-SettingChangeBroadcast -Section "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced"
+        Start-Sleep -Milliseconds 200
+
+        # Verify; if not applied, restart Explorer quietly as fallback
+        $applied = Get-PreferenceState "DesktopIcons"
+        if ($applied -ne $Enable) {
+            Restart-Explorer
+            Start-Sleep -Milliseconds 500
+        }
         Write-Host "[SUCCESS] Desktop Icons $(if($Enable){'shown'}else{'hidden'})" -ForegroundColor Green
         Write-Log "Desktop Icons $(if($Enable){'SHOWN'}else{'HIDDEN'})"
-        Restart-Explorer
     } catch {
         Write-Host "[ERROR] Failed to set Desktop Icons visibility: $_" -ForegroundColor Red
         Write-Log "[ERROR] Failed to set Desktop Icons visibility: $_"
