@@ -1162,7 +1162,7 @@ public static class NativeMethods {
         }
         [UIntPtr]$result = [UIntPtr]::Zero
         # SMTO_NORMAL=0, timeout 250ms is enough
-        [void][NativeMethods]::SendMessageTimeout([NativeMethods]::HWND_BROADCAST, [uint32][NativeMethods]::WM_SETTINGCHANGE, [UIntPtr]::Zero, $Section, 0u, 250u, [ref]$result)
+    [void][NativeMethods]::SendMessageTimeout([NativeMethods]::HWND_BROADCAST, [uint32][NativeMethods]::WM_SETTINGCHANGE, [UIntPtr]::Zero, $Section, [uint32]0, [uint32]250, [ref]$result)
         Write-Log "Broadcasted WM_SETTINGCHANGE for '$Section'"
     } catch {
         Write-Log "[ERROR] Failed to broadcast setting change for '$Section': $_"
@@ -1378,7 +1378,7 @@ function Set-RegistryValue {
 }
 
 # Create shortcuts that run the latest remote script (Desktop and Start Menu)
-function Ensure-OptiTweaksShortcut {
+function New-OptiTweaksShortcut {
     try {
         $desktop = [Environment]::GetFolderPath('Desktop')
         $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
@@ -1389,9 +1389,9 @@ function Ensure-OptiTweaksShortcut {
             @{ Path = $startMenu; Name = 'OptiTweaks.lnk' }
         )
 
-        $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue)?.Source
-        if (-not $pwsh) { $pwsh = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
-        $args = "-NoProfile -ExecutionPolicy Bypass -Command \"iex (iwr -UseBasicParsing 'https://raw.githubusercontent.com/22Farito/PC_Tweaks/main/src/__main__.ps1')\""
+    $pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($pwshCmd) { $pwsh = $pwshCmd.Source } else { $pwsh = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
+    $shortcutArgs = "-NoProfile -ExecutionPolicy Bypass -Command `"Invoke-Expression (Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/22Farito/PC_Tweaks/main/src/__main__.ps1').Content`""
         $ws = New-Object -ComObject WScript.Shell
 
         foreach ($scInfo in $shortcuts) {
@@ -1399,7 +1399,7 @@ function Ensure-OptiTweaksShortcut {
             if (Test-Path $full) { continue }
             $sc = $ws.CreateShortcut($full)
             $sc.TargetPath = $pwsh
-            $sc.Arguments = $args
+            $sc.Arguments = $shortcutArgs
             $sc.WorkingDirectory = $scInfo.Path
             $sc.IconLocation = $pwsh
             $sc.Description = 'Run the latest PC_Tweaks script from GitHub'
@@ -4622,8 +4622,8 @@ try {
     Write-Log "Error loading preference states: $_"
 }
 
-# Create the OptiTweaks desktop shortcut (once)
-Ensure-OptiTweaksShortcut
+# Create the OptiTweaks shortcuts (once)
+New-OptiTweaksShortcut
 
 # ===============================
 # Preference Toggle Handlers
