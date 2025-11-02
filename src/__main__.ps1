@@ -1377,12 +1377,16 @@ function Set-RegistryValue {
     }
 }
 
+## Removed custom icon generation per user request
+
 # Create shortcuts that run the latest remote script (Desktop and Start Menu)
 function New-OptiTweaksShortcut {
     try {
         $desktop = [Environment]::GetFolderPath('Desktop')
         $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
         if (-not (Test-Path $startMenu)) { New-Item -ItemType Directory -Path $startMenu -Force | Out-Null }
+
+    # Use the default PowerShell icon only (no custom logo)
 
         $shortcuts = @(
             @{ Path = $desktop;   Name = 'optitweaks.lnk' },
@@ -1391,21 +1395,40 @@ function New-OptiTweaksShortcut {
 
     $pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
     if ($pwshCmd) { $pwsh = $pwshCmd.Source } else { $pwsh = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
-    $shortcutArgs = "-NoProfile -ExecutionPolicy Bypass -Command `"Invoke-Expression (Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/22Farito/PC_Tweaks/main/src/__main__.ps1').Content`""
+    # Force UTF-8 decoding when downloading the script to avoid "???" characters from codepage issues on PowerShell 5.1
+    $shortcutArgs = "-NoProfile -ExecutionPolicy Bypass -Command `"& { $u='https://raw.githubusercontent.com/22Farito/PC_Tweaks/main/src/__main__.ps1'; $wc=New-Object System.Net.WebClient; $wc.Headers['User-Agent']='Mozilla/5.0'; $bytes=$wc.DownloadData($u); $script=[Text.Encoding]::UTF8.GetString($bytes); Invoke-Expression $script }`""
         $ws = New-Object -ComObject WScript.Shell
 
         foreach ($scInfo in $shortcuts) {
             $full = Join-Path $($scInfo.Path) $($scInfo.Name)
-            if (Test-Path $full) { continue }
             $sc = $ws.CreateShortcut($full)
+            $iconLoc = "$pwsh,0"
+
+            # Always (re)set properties so icon/args refresh reliably
             $sc.TargetPath = $pwsh
             $sc.Arguments = $shortcutArgs
             $sc.WorkingDirectory = $scInfo.Path
-            $sc.IconLocation = $pwsh
+            $sc.IconLocation = $iconLoc
             $sc.Description = 'Run the latest PC_Tweaks script from GitHub'
             $null = $sc.Save()
-            Write-Log "Created OptiTweaks shortcut at $full"
+            if (Test-Path $full) { Write-Log "Updated OptiTweaks shortcut at $full" } else { Write-Log "Created OptiTweaks shortcut at $full" }
         }
+
+        # Nudge Explorer to refresh icon cache
+        try {
+            $code = @'
+using System;
+using System.Runtime.InteropServices;
+public static class ShellNotify {
+    [DllImport("shell32.dll")] public static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+}
+'@
+            if (-not ([System.Management.Automation.PSTypeName]'ShellNotify').Type) {
+                Add-Type -TypeDefinition $code -Language CSharp -ErrorAction Stop
+            }
+            # SHCNE_ASSOCCHANGED = 0x08000000, SHCNF_IDLIST = 0x0000
+            [ShellNotify]::SHChangeNotify(0x08000000, 0x0000, [IntPtr]::Zero, [IntPtr]::Zero)
+        } catch { }
     } catch {
         Write-Log "[WARN] Failed to create OptiTweaks shortcut: $_"
     }
@@ -2166,11 +2189,12 @@ $xaml = @"
                         <Button Name="BtnTweaks"   Content="Tweaks"  Style="{StaticResource RoundedNavButton}"/>
                         <Button Name="BtnConfig"   Content="Config"  Style="{StaticResource RoundedNavButton}"/>
                         <Button Name="BtnLogs"     Content="Logs"    Style="{StaticResource RoundedNavButton}"/>
-                        <TextBlock Text="│" FontSize="20" Foreground="{DynamicResource ForegroundBrush}" VerticalAlignment="Center" Margin="8,0"/>
+                        <!-- Use a vector separator to avoid encoding issues when the script is fetched remotely -->
+                        <Border Width="1" Height="18" Background="{DynamicResource ForegroundBrush}" Opacity="0.5" VerticalAlignment="Center" Margin="8,0"/>
                         <Button Name="BtnActivateWindows" Style="{StaticResource RoundedNavButton}" Width="Auto">
                             <TextBlock Text="Activate Windows" Margin="14,0"/>
                         </Button>
-                        <TextBlock Text="│" FontSize="20" Foreground="{DynamicResource ForegroundBrush}" VerticalAlignment="Center" Margin="8,0"/>
+                        <Border Width="1" Height="18" Background="{DynamicResource ForegroundBrush}" Opacity="0.5" VerticalAlignment="Center" Margin="8,0"/>
                         <Button Name="BtnCreateRestorePoint" Style="{StaticResource RoundedNavButton}" Width="Auto">
                             <TextBlock Text="Create Restore Point" Margin="14,0"/>
                         </Button>
