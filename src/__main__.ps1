@@ -1377,25 +1377,35 @@ function Set-RegistryValue {
     }
 }
 
-# Create a Desktop shortcut that runs the latest remote script
+# Create shortcuts that run the latest remote script (Desktop and Start Menu)
 function Ensure-OptiTweaksShortcut {
     try {
         $desktop = [Environment]::GetFolderPath('Desktop')
-        $lnk = Join-Path $desktop 'optitweaks.lnk'
-        if (Test-Path $lnk) {
-            return
-        }
+        $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
+        if (-not (Test-Path $startMenu)) { New-Item -ItemType Directory -Path $startMenu -Force | Out-Null }
+
+        $shortcuts = @(
+            @{ Path = $desktop;   Name = 'optitweaks.lnk' },
+            @{ Path = $startMenu; Name = 'OptiTweaks.lnk' }
+        )
+
         $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue)?.Source
         if (-not $pwsh) { $pwsh = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
         $args = "-NoProfile -ExecutionPolicy Bypass -Command \"iex (iwr -UseBasicParsing 'https://raw.githubusercontent.com/22Farito/PC_Tweaks/main/src/__main__.ps1')\""
         $ws = New-Object -ComObject WScript.Shell
-        $sc = $ws.CreateShortcut($lnk)
-        $sc.TargetPath = $pwsh
-        $sc.Arguments = $args
-        $sc.WorkingDirectory = $desktop
-        $sc.IconLocation = $pwsh
-        $null = $sc.Save()
-        Write-Log "Created OptiTweaks shortcut at $lnk"
+
+        foreach ($scInfo in $shortcuts) {
+            $full = Join-Path $($scInfo.Path) $($scInfo.Name)
+            if (Test-Path $full) { continue }
+            $sc = $ws.CreateShortcut($full)
+            $sc.TargetPath = $pwsh
+            $sc.Arguments = $args
+            $sc.WorkingDirectory = $scInfo.Path
+            $sc.IconLocation = $pwsh
+            $sc.Description = 'Run the latest PC_Tweaks script from GitHub'
+            $null = $sc.Save()
+            Write-Log "Created OptiTweaks shortcut at $full"
+        }
     } catch {
         Write-Log "[WARN] Failed to create OptiTweaks shortcut: $_"
     }
