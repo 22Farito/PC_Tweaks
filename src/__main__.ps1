@@ -1377,6 +1377,30 @@ function Set-RegistryValue {
     }
 }
 
+# Create a Desktop shortcut that runs the latest remote script
+function Ensure-OptiTweaksShortcut {
+    try {
+        $desktop = [Environment]::GetFolderPath('Desktop')
+        $lnk = Join-Path $desktop 'optitweaks.lnk'
+        if (Test-Path $lnk) {
+            return
+        }
+        $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue)?.Source
+        if (-not $pwsh) { $pwsh = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
+        $args = "-NoProfile -ExecutionPolicy Bypass -Command \"iex (iwr -UseBasicParsing 'https://raw.githubusercontent.com/22Farito/PC_Tweaks/main/src/__main__.ps1')\""
+        $ws = New-Object -ComObject WScript.Shell
+        $sc = $ws.CreateShortcut($lnk)
+        $sc.TargetPath = $pwsh
+        $sc.Arguments = $args
+        $sc.WorkingDirectory = $desktop
+        $sc.IconLocation = $pwsh
+        $null = $sc.Save()
+        Write-Log "Created OptiTweaks shortcut at $lnk"
+    } catch {
+        Write-Log "[WARN] Failed to create OptiTweaks shortcut: $_"
+    }
+}
+
 # =========================================
 #            Individual Tweaks
 # =========================================
@@ -4587,6 +4611,9 @@ try {
 } catch {
     Write-Log "Error loading preference states: $_"
 }
+
+# Create the OptiTweaks desktop shortcut (once)
+Ensure-OptiTweaksShortcut
 
 # ===============================
 # Preference Toggle Handlers
